@@ -1,0 +1,18 @@
+{
+    "name": "axi4",
+    "port": [
+	{
+	    "name": "data",
+	    "master_out": true,
+	    "width": 32
+	},
+	{
+	    "name": "req",
+	    "master_dir": "out"
+	},
+	{
+	    "name": "ack",
+	    "master_in": true
+	}
+    ]
+}
