@@ -43,5 +43,8 @@ public class Bloxbus {
 			System.out.println("*Warning* bus definition not found: " + n + ".json");
 		}
 	}
-	
+
+	public String toString() {
+		return "bus " + name;
+	}
 }

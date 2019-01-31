@@ -53,4 +53,9 @@ public class Bloxport extends Bloxelement {
 	public void accept(Visitor visitor) {
 		visitor.visit(this);
 	}
+
+	public boolean isMaster() {
+		if (direction.equals("master") || direction.endsWith("out")) return true;
+		return false;
+	}
 }

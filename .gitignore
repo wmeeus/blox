@@ -2,3 +2,4 @@
 *.class
 *.vhdl
 work/design.json
+*.json~

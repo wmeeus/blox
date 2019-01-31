@@ -259,10 +259,13 @@ public class Bloxnode extends Bloxelement implements Visitable {
 				}
 			}
 
+			Hashtable<Bloxnode, VHDLinstance> instances = new Hashtable<Bloxnode, VHDLinstance>();
+			
 			for (Bloxinst inst: children) {
 				VHDLentity ee = inst.node.vhdl();
 				VHDLinstance vi = new VHDLinstance(inst.name, ee);
 				a.add(vi);
+				instances.put(inst.node, vi);
 				// TODO add port mapping + intermediate signals (if necessary)
 			}
 
@@ -270,8 +273,20 @@ public class Bloxnode extends Bloxelement implements Visitable {
 				if (conn.haswire) {
 					System.out.println("local connections in " + name + " connection " + conn.name
 							+ " type " + conn.getType());
-					for (Bloxbusport bp: conn.type.ports) {
-						a.add(new VHDLsignal("s_" + conn.name + "_" + bp.name, VHDLstd_logic_vector.getVector(bp.width)));
+					for (Bloxbusport bp: conn.getType().ports) {
+						VHDLsignal bs = new VHDLsignal("s_" + conn.name + "_" + bp.name, VHDLstd_logic_vector.getVector(bp.width));
+						a.add(bs);
+
+						for (Bloxendpoint ep: conn.endpoints) {
+							if (ep.isPort()) {
+								
+							} else {
+								System.out.println("mapping: " + ep.port.name + "_" + bp.name + " endpoint " + ep);
+								System.out.println(" ep.path(0) = " + ep.getLast());
+								instances.get(ep.getLast()).map(ep.port.name + "_" + bp.name, bs);
+							}
+							
+						}
 						
 						
 					}
