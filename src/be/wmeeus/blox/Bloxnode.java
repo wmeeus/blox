@@ -260,13 +260,14 @@ public class Bloxnode extends Bloxelement implements Visitable {
 			}
 
 			Hashtable<Bloxnode, VHDLinstance> instances = new Hashtable<Bloxnode, VHDLinstance>();
-			
+
 			for (Bloxinst inst: children) {
 				VHDLentity ee = inst.node.vhdl();
-				VHDLinstance vi = new VHDLinstance(inst.name, ee);
-				a.add(vi);
-				instances.put(inst.node, vi);
-				// TODO add port mapping + intermediate signals (if necessary)
+				for (int i = 0; i < inst.repeat; i++) {
+					VHDLinstance vi = new VHDLinstance(inst.name + ((inst.repeat < 2)?"":("_"+i)), ee);
+					a.add(vi);
+					instances.put(inst.node, vi);
+				}
 			}
 
 			if (localconnections != null) for (Bloxconn conn: localconnections) {
@@ -279,22 +280,22 @@ public class Bloxnode extends Bloxelement implements Visitable {
 
 						for (Bloxendpoint ep: conn.endpoints) {
 							if (ep.isPort()) {
-								
+
 							} else {
 								System.out.println("mapping: " + ep.port.name + "_" + bp.name + " endpoint " + ep);
 								System.out.println(" ep.path(0) = " + ep.getLast());
 								instances.get(ep.getLast()).map(ep.port.name + "_" + bp.name, bs);
 							}
-							
+
 						}
-						
-						
+
+
 					}
-					
+
 				}
-				
+
 				for (Bloxendpoint ep: conn.endpoints) {
-					
+
 				}
 			}
 

@@ -45,7 +45,7 @@ public class Bloxinst extends Bloxelement {
 	public Bloxinst(JSONObject o) throws BloxException {
 		try {
 			String n = o.getString("name");
-			if (o.has("instname")) {
+			if (o.has("instance")) {
 				name = o.getString("instance");
 			} else {
 				name = "inst_" + n;

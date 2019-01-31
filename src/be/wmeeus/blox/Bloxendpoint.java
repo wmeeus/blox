@@ -17,21 +17,6 @@ public class Bloxendpoint {
 		path.add(n);
 	}
 	
-	public Bloxnode get(int i) {
-		if (path == null || path.size() <= i) return null;
-		return path.get(path.size() - i - 1);
-	}
-	
-	public Bloxnode getLast() {
-		if (path == null) return null;
-		return path.get(0);
-	}
-	
-	public int pathlength() {
-		if (path == null) return 0;
-		return path.size();
-	}
-	
 	public Bloxendpoint(Bloxnode b) {
 		path = new ArrayList<Bloxnode>();
 		path.add(b);
@@ -47,6 +32,21 @@ public class Bloxendpoint {
 		}
 		path.add(b);
 		return this;
+	}
+	
+	public Bloxnode get(int i) {
+		if (path == null || path.size() <= i) return null;
+		return path.get(path.size() - i - 1);
+	}
+	
+	public Bloxnode getLast() {
+		if (path == null) return null;
+		return path.get(0);
+	}
+	
+	public int pathlength() {
+		if (path == null) return 0;
+		return path.size();
 	}
 	
 	public String toString() {
