@@ -242,6 +242,29 @@ public class Bloxnode extends Bloxelement implements Visitable {
 		return null;
 	}
 
+	public Bloxendpoint findEndpoint(String pn) throws BloxException {
+		if (!(pn.contains(":"))) {
+			int sep = pn.indexOf("(");
+			String idx = null;
+			if (sep > -1) {
+				idx = pn.substring(sep+1,  pn.indexOf(")"));
+				pn = pn.substring(0, sep - 1);
+			}
+			Bloxport p = getPort(pn);
+			if (p == null) throw new BloxException("Port " + pn + " not found at " + toString());
+			Bloxendpoint ept = new Bloxendpoint(p);
+			ept.portidx = idx;
+			return ept;
+		}
+		
+//		System.out.println("*Bloxnode::endpoint* looking for " + pn);
+		for (Bloxinst bi: children) {
+			Bloxendpoint bn = bi.findEndpoint(pn);
+			if (bn!=null) return bn;
+		}
+		return null;
+	}
+
 	VHDLentity e = null;
 	public VHDLentity vhdl() throws BloxException {
 		System.out.println("*Bloxnode::vhdl* node: " + name);
@@ -328,6 +351,5 @@ public class Bloxnode extends Bloxelement implements Visitable {
 			ex.printStackTrace();
 		}
 	}
-
 
 }

@@ -98,9 +98,34 @@ public class Bloxinst extends Bloxelement {
 	}
 
 	public Bloxendpoint findEndBlock(String nn) {
-		if (node.name.equals(nn)) return new Bloxendpoint(node);
+		if (node.name.equals(nn)) return new Bloxendpoint(node, null); // TODO index
 		Bloxendpoint ep = node.findEndBlock(nn);
 		if (ep == null) return null;
-		return ep.add(node);
+		return ep.add(node, null);
+	}
+
+	public Bloxendpoint findEndpoint(String nn) throws BloxException {
+		int sep = nn.indexOf(":");
+		if (sep<1) throw new BloxException ("Expecting a path, got " + nn + " at " + toString());
+		String ln = nn.substring(0, sep);
+		String dp = nn.substring(sep + 1);
+		String idx = null;
+		sep = ln.indexOf("(");
+		if (sep > -1) {
+			idx = ln.substring(sep+1,  ln.indexOf(")"));
+			ln = ln.substring(0, sep);
+		}
+		
+//		System.out.println("*Bloxinst::endpoint* looking for " + ln + " index " + idx + " rem= " + dp);
+ 
+		if (node.name.equals(ln)) {
+			Bloxendpoint ept = node.findEndpoint(dp);
+			if (ept == null) {
+				throw new BloxException("Not expecting null endpoint at " + toString());
+			}
+			ept.add(node, idx);
+			return ept;
+		}
+		return null;
 	}
 }

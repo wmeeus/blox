@@ -4,9 +4,12 @@ import java.util.*;
 
 import org.json.*;
 
+import be.wmeeus.symmath.expression.*;
+
 public class Bloxconn {
 	String name;
 	ArrayList<Bloxendpoint> endpoints = new ArrayList<Bloxendpoint>();
+	Mparameter parameter = null;
 	Bloxbus type = null;
 	boolean hasport = false;
 	boolean haswire = true;
@@ -20,6 +23,11 @@ public class Bloxconn {
 
 	public Bloxconn(JSONObject o, Bloxnode b) throws BloxException {
 		name = o.getString("name");
+		if (o.has("parameter")) {
+			parameter = Bloxparameter.get(o.getJSONObject("parameter"));
+			System.out.println("Found parameter " + parameter);
+		}
+		
 		JSONArray eps = o.getJSONArray("endpoints");
 		for (Object oo: eps) {
 			String ep = (String)oo;
@@ -30,37 +38,63 @@ public class Bloxconn {
 			Bloxport p = null;
 			Bloxnode nb = null;
 			Bloxendpoint ept = null;
+			
+			if (pn.startsWith(":")) {
+//				System.out.println("*Bloxconn* connecting local endpoint: " + ep);
 
-			while (pn.contains(":")) {
-				int col = pn.indexOf(":");
-				String nn = pn.substring(0, col);
-				pn = pn.substring(col+1);
-
-				if (nn.length()==0) {
-					nb = b; // port of the current block
-					hasport = true;
-				} else {
-					ept = b.findEndBlock(nn);
-					if (ept == null) {
-						throw new BloxException("Cannot find block: " + ep + " (" + nn + ") in " + b.name);
-					}
-					nb = ept.getLast();
-				}
-			}
-			p = nb.getPort(pn);
-			if (p == null) {
-				throw new BloxException("Cannot find port: " + ep + " (" + pn+ ") in " + nb);
-			}
-			if (ept == null) {
+				// local port
+				nb = b; // port of the current block
+				hasport = true;
+				p = nb.getPort(pn.substring(1));
 				ept = new Bloxendpoint(p);
 			} else {
-				ept.setPort(p);
+//				System.out.println("*Bloxconn* connecting deeper endpoint: " + pn);
+
+				ept = b.findEndpoint(pn);
 			}
-			add(ept);			
+			
+//			while (pn.contains(":")) {
+//				int col = pn.indexOf(":");
+//				String nn = pn.substring(0, col);
+//				pn = pn.substring(col+1);
+//				
+//				col = nn.indexOf("(");
+//				if (col > -1) {
+//					nnindex = nn.substring(col+1, nn.indexOf(")"));
+//					nn = nn.substring(0, col);
+//				}
+//
+//				if (nn.length()==0) {
+//					nb = b; // port of the current block
+//					hasport = true;
+//				} else {
+//					ept = b.findEndBlock(nn);
+//					if (ept == null) {
+//						throw new BloxException("Cannot find block: " + ep + " (" + nn + ") in " + b.name);
+//					}
+//					ept.setIndex(nnindex);
+//					System.out.println("Adding " + ept + " to " + this);
+//					nb = ept.getLast();
+//				}
+//			}
+//			p = nb.getPort(pn);
+//			if (p == null) {
+//				throw new BloxException("Cannot find port: " + ep + " (" + pn + ") in " + nb);
+//			}
+//			if (ept == null) {
+//				ept = new Bloxendpoint(p);
+//			} else {
+//				ept.setPort(p);
+//			}
+			add(ept);
 		}
 	}
 
-	public void add(Bloxendpoint b) {
+	public void add(Bloxendpoint b) throws BloxException {
+		if (b == null) {
+			throw new BloxException("Not expecting null endpoint at " + this);
+		}
+		
 		if (!endpoints.contains(b)) {
 			endpoints.add(b);
 		}
@@ -77,6 +111,9 @@ public class Bloxconn {
 				//				eps += p.name + " ";
 				eps += ep + " ";
 			}
+		}
+		if (parameter != null) {
+			eps = " [" + parameter.toString() + "]" + eps;
 		}
 		return "connection " + name + eps;
 	}
@@ -196,7 +233,7 @@ public class Bloxconn {
 		}
 
 		System.out.println("*connect* figuring out connection " + name + " in " + parent);
-		
+
 		Hashtable<Bloxnode, Bloxconn> subconns = new Hashtable<Bloxnode, Bloxconn>();
 		Bloxconn localconn = new Bloxconn(name);
 		parent.addLocalConnection(localconn);
@@ -224,25 +261,10 @@ public class Bloxconn {
 		System.out.println(" original : " + toString());
 
 		for (Bloxnode en: subconns.keySet()) {
-			localconn.add(new Bloxendpoint(subconns.get(en).connectUp(en), en));
+			localconn.add(new Bloxendpoint(subconns.get(en).connectUp(en), en, null)); // TODO index
 		}
 		
 		System.out.println(" localized: " + localconn.toString());
-//		for (Bloxendpoint ee: localeps) {
-//			System.out.println(" local: " + ee);
-//		}
-//		
-//		for (Bloxnode en: subconns.keySet()) {
-//			System.out.println(" to " + en.name);
-//			for (Bloxendpoint ee: subconns.get(en)) {
-//				System.out.println("  deep port " + ee);
-//			}
-//		}
-		
-		// for each deeper module to connect, make a new connection from relevant endpoints and
-		// have the next level take care of things. Return a new endpoint.
-		
-		
 	}
 
 	public Bloxbus getType() {
@@ -254,4 +276,6 @@ public class Bloxconn {
 		return type;
 	}
 
+	
+	
 }
