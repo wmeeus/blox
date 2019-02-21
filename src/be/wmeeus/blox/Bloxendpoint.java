@@ -7,6 +7,7 @@ import be.wmeeus.symmath.util.Mexception;
 
 public class Bloxendpoint {
 	Bloxport port = null;
+	Mnode portindex = null;
 	String portidx = null;
 	private ArrayList<Bloxnode> path = null;
 	private ArrayList<Mnode> indices = null;
@@ -15,8 +16,9 @@ public class Bloxendpoint {
 		port = p;
 	}
 	
-	public Bloxendpoint(Bloxendpoint ep, Bloxnode n, String ind) {
+	public Bloxendpoint(Bloxendpoint ep, Bloxnode n, Mnode ind) {
 		port = ep.port;
+		portindex = ep.portindex;
 		path = new ArrayList<Bloxnode>();
 		indices = new ArrayList<Mnode>();
 		if (ep.path != null) {
@@ -24,15 +26,7 @@ public class Bloxendpoint {
 			indices.addAll(ep.indices);
 		}
 		path.add(n);
-		if (ind == null) {
-			indices.add(null);
-		} else {
-			try {
-				indices.add(Mnode.mknode(ind));
-			} catch(Mexception ex) {
-				ex.printStackTrace();
-			}
-		}
+		indices.add(ind);
 	}
 	
 	public Bloxendpoint(Bloxnode b, String ind) {
@@ -83,9 +77,19 @@ public class Bloxendpoint {
 		return path.get(path.size() - i - 1);
 	}
 	
+	public Mnode getIndex(int i) {
+		if (path == null || path.size() <= i) return null;
+		return indices.get(path.size() - i - 1);
+	}
+	
 	public Bloxnode getLast() {
 		if (path == null) return null;
 		return path.get(0);
+	}
+	
+	public Mnode getLastIndex() {
+		if (indices == null) return null;
+		return indices.get(0);
 	}
 	
 	public int pathlength() {
@@ -100,6 +104,9 @@ public class Bloxendpoint {
 			r = port.name;
 			if (portidx != null) {
 				r += "(" + portidx + ")";
+			}
+			if (portindex != null) {
+				r += "(" + portindex + ")";
 			}
 		}
 		int i = 0;
@@ -160,5 +167,23 @@ public class Bloxendpoint {
 
 	public boolean isMaster() {
 		return port.isMaster();
+	}
+	
+	public ArrayList<Mnode> getFirstIndices() {
+		ArrayList<Mnode> l = null;
+		for (Mnode i: indices) {
+			if (i != null) {
+				
+			}
+		}
+		
+		return l;
+	}
+
+	public Mnode anyIndex() {
+		for (Mnode n: indices) {
+			if (n != null) return n; 
+		}
+		return null;
 	}
 }

@@ -6,6 +6,9 @@ import java.util.*;
 
 import org.json.*;
 
+import be.wmeeus.symmath.expression.Mnode;
+import be.wmeeus.symmath.expression.Msymbol;
+import be.wmeeus.symmath.util.Mexception;
 import be.wmeeus.util.*;
 import be.wmeeus.vhdl.*;
 
@@ -256,8 +259,8 @@ public class Bloxnode extends Bloxelement implements Visitable {
 			ept.portidx = idx;
 			return ept;
 		}
-		
-//		System.out.println("*Bloxnode::endpoint* looking for " + pn);
+
+		//		System.out.println("*Bloxnode::endpoint* looking for " + pn);
 		for (Bloxinst bi: children) {
 			Bloxendpoint bn = bi.findEndpoint(pn);
 			if (bn!=null) return bn;
@@ -277,39 +280,71 @@ public class Bloxnode extends Bloxelement implements Visitable {
 				boolean isslave = false;
 				if (p.direction.equals("in") || p.direction.equals("slave"))
 					isslave = true;
-				for (Bloxbusport bp: p.type.ports) {
-					e.add(new VHDLport(p.name + "_" + bp.name, bp.enslave(isslave), VHDLstd_logic_vector.getVector(bp.width)));
+				for (int i = 0; i < p.repeat; i++) {
+					String suffix = "";
+					if (p.repeat > 1) suffix = "_" + i;
+					for (Bloxbusport bp: p.type.ports) {
+						e.add(new VHDLport(p.name + "_" + bp.name + suffix, bp.enslave(isslave), VHDLstd_logic_vector.getVector(bp.width)));
+					}
 				}
 			}
 
-			Hashtable<Bloxnode, VHDLinstance> instances = new Hashtable<Bloxnode, VHDLinstance>();
+			Hashtable<Bloxnode, ArrayList<VHDLinstance> > instances = new Hashtable<Bloxnode, ArrayList<VHDLinstance> >();
+			ArrayList<Integer> ldom = null;
 
 			for (Bloxinst inst: children) {
 				VHDLentity ee = inst.node.vhdl();
 				for (int i = 0; i < inst.repeat; i++) {
 					VHDLinstance vi = new VHDLinstance(inst.name + ((inst.repeat < 2)?"":("_"+i)), ee);
 					a.add(vi);
-					instances.put(inst.node, vi);
+					if (instances.containsKey(inst.node)) {
+						instances.get(inst.node).add(vi);
+					} else {
+						ArrayList<VHDLinstance> ai = new ArrayList<VHDLinstance>();
+						ai.add(vi);
+						instances.put(inst.node, ai);
+					}
 				}
 			}
 
 			if (localconnections != null) for (Bloxconn conn: localconnections) {
+				boolean paramized = false;
+				ArrayList<Integer> pdom = null;
+				if (conn.parameter != null) {
+					System.out.println("Parameterized local connection in node " + name + ": " + conn);
+					paramized = true;
+					for (Bloxendpoint ep: conn.endpoints) {
+						Mnode indp = ep.getIndex(0);
+						if (indp != null) {
+							try {
+								ldom = conn.getParameter().domain(indp);
+								if (pdom == null) {
+									pdom = ldom;
+								} else {
+									for (Integer i: ldom) {
+										if (!pdom.contains(i)) {
+											pdom.add(i);
+											System.err.println("*Warning* different domains in " + this);
+										}
+									}
+								}
+							} catch(Mexception ex) {
+								ex.printStackTrace();
+							}
+						}
+
+					}
+				}
+
 				if (conn.haswire) {
 					System.out.println("local connections in " + name + " connection " + conn.name
 							+ " type " + conn.getType());
 					for (Bloxbusport bp: conn.getType().ports) {
-						VHDLsignal bs = new VHDLsignal("s_" + conn.name + "_" + bp.name, VHDLstd_logic_vector.getVector(bp.width));
-						a.add(bs);
-
-						for (Bloxendpoint ep: conn.endpoints) {
-							if (ep.isPort()) {
-
-							} else {
-								System.out.println("mapping: " + ep.port.name + "_" + bp.name + " endpoint " + ep);
-								System.out.println(" ep.path(0) = " + ep.getLast());
-								instances.get(ep.getLast()).map(ep.port.name + "_" + bp.name, bs);
-							}
-
+						int j = 0;
+						if (pdom == null) {
+							vhdlConnectBusport(a, instances, conn, paramized, bp, -1, -1, null);
+						} else for (Integer i: pdom) {
+							vhdlConnectBusport(a, instances, conn, paramized, bp, i.intValue(), j++, ldom);
 						}
 
 
@@ -335,6 +370,83 @@ public class Bloxnode extends Bloxelement implements Visitable {
 			throw new BloxException(ex.toString());
 		}
 		return e;
+	}
+
+	private void vhdlConnectBusport(VHDLarchitecture a, Hashtable<Bloxnode, ArrayList<VHDLinstance>> instances,
+			Bloxconn conn, boolean paramized, Bloxbusport bp, int parseq, int seq, 
+			ArrayList<Integer> ldom) throws VHDLexception, BloxException {
+
+		String suffix = "";
+
+		// seq is sequence number (in domain values list) = always 0, 1, ...
+		// parseq is parameter value in current iteration
+		if (seq > -1) suffix = "_" + seq;
+
+		VHDLsignal bs = new VHDLsignal("s_" + conn.name + "_" + bp.name + suffix, 
+				VHDLstd_logic_vector.getVector(bp.width));
+		a.add(bs);
+
+		try {
+			for (Bloxendpoint ep: conn.endpoints) {
+				//			if (paramized) {
+				//				Mnode indp = ep.getIndex(0);
+				//				System.out.println("** Endpoint for parameter: " + ep + " index " + indp);
+				//				if (indp != null) {
+				//					try {
+				//						System.out.println("   Parameter image: " + conn.getParameter().domain(indp));
+				//					} catch(Mexception ex) {
+				//						ex.printStackTrace();
+				//					}
+				//				}
+				//			}
+
+				Hashtable<Msymbol, Integer> paramvalues = null;
+				if (conn.parameter != null) {
+					paramvalues = new Hashtable<Msymbol, Integer>();
+					// this should be the only parameter value that we're handling in this method call!
+					paramvalues.put(conn.parameter.getSymbol(), parseq);
+				}
+
+				if (ep.isPort()) {
+					VHDLsymbol vp = e.get(ep.port.name + "_" + bp.name + suffix);
+					System.out.println("mapping port: " + ep.port.name + "_" + bp.name + suffix + " vhdl " + vp);
+					if (vp != null) {
+						if (vp instanceof VHDLport) {
+							VHDLport vport = (VHDLport)vp;
+							if (vport.isIn()) {
+								a.add(new VHDLassign(bs, vport));
+							} else {
+								a.add(new VHDLassign(vport, bs));
+							}
+						}
+					}
+					
+				} else {
+					int iseq = 0;
+					if (seq != -1) {
+						if (ep.getLastIndex() != null) {
+							iseq = ep.getLastIndex().eval(paramvalues).get();
+							// todo use next() ?
+						} else {
+							iseq = seq;
+						}
+					}
+					String portsuffix = "";
+					if (ep.portindex != null) {
+						portsuffix = "_" + ep.portindex.eval(paramvalues);
+					}
+					System.out.println("mapping: " + ep.port.name + "_" + bp.name + portsuffix + 
+							" endpoint " + ep + " seq=" + seq + " iseq=" + iseq);
+					System.out.println(" ep.path(0) = " + ep.getLast());
+					instances.get(ep.getLast()).get(iseq).map(ep.port.name + "_" + bp.name + portsuffix,
+							bs);
+				}
+
+			}
+		} catch(Mexception ex) {
+			ex.printStackTrace();
+			throw new BloxException(ex.toString());
+		}
 	}
 
 	public void connectNodes() {
