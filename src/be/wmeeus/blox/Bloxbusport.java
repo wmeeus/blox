@@ -8,6 +8,13 @@ public class Bloxbusport {
 	int width = 1;
 	Bloxbus parent = null;
 	
+	public Bloxbusport(String n, String m, int w, Bloxbus p) {
+		name = n;
+		master_dir = m;
+		width = w;
+		parent = p;
+	}
+	
 	public Bloxbusport(JSONObject o, Bloxbus b) throws BloxException {
 		parent = b;
 		try {

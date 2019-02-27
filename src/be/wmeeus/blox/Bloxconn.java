@@ -123,7 +123,17 @@ public class Bloxconn {
 		connbaselevel = 0;
 		boolean done = false;
 		int npoints = endpoints.size();
-		if (npoints < 2) { // strange, this is not a proper connection
+		if (npoints == 1) {
+			Bloxendpoint ep = endpoints.get(0);
+			if (!ep.isPort()) {
+				Bloxport p = new Bloxport(ep.port.name, parent, ep.port.type);
+				p.direction = ep.port.direction;
+				parent.addPort(p);
+				endpoints.add(new Bloxendpoint(p));
+			}
+			npoints = endpoints.size();
+		}
+		if (npoints < 2) { // not a proper connection
 			throw new BloxException("Connection " + name + " has fewer than 2 endpoints");
 		}
 		Bloxendpoint end0 = endpoints.get(0);
@@ -276,14 +286,24 @@ public class Bloxconn {
 				conaddm = new Hashtable<Mnode, Bloxconn>();
 				subconns.put(nnode, conaddm);
 			}
-			Bloxconn conadd = conaddm.get(ep.getIndex(0));
+			System.err.println("Bloxconn::connect* endpoint " + ep);
+			Bloxconn conadd = null;
+			if (parameter == null) {
+				conadd = conaddm.get(Mvalue.ZERO);
+			} else {
+				conadd = conaddm.get(ep.getIndex(0));
+			}
 			if (conadd != null) {
 				conadd.add(endstrip);
 			} else {
 				Bloxconn newconn = new Bloxconn(name);
 				newconn.parameter = parameter;
 				newconn.add(endstrip);
-				conaddm.put(ep.getIndex(0), newconn);
+				if (parameter == null) {
+					conaddm.put(Mvalue.ZERO, newconn);
+				} else {
+					conaddm.put(ep.getIndex(0), newconn);
+				}
 			}
 //			subconnind.put(endstrip, ep.getIndex(0));
 			// figure out whether the connection includes a port of parent

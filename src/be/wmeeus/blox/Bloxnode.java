@@ -6,8 +6,7 @@ import java.util.*;
 
 import org.json.*;
 
-import be.wmeeus.symmath.expression.Mnode;
-import be.wmeeus.symmath.expression.Msymbol;
+import be.wmeeus.symmath.expression.*;
 import be.wmeeus.symmath.util.Mexception;
 import be.wmeeus.util.*;
 import be.wmeeus.vhdl.*;
@@ -17,6 +16,7 @@ public class Bloxnode extends Bloxelement implements Visitable {
 	ArrayList<Bloxport> ports = new ArrayList<Bloxport>();
 	ArrayList<Bloxconn> connections = null;
 	ArrayList<Bloxconn> localconnections = null;
+	String type = null;
 
 	public String getName() {
 		return name;
@@ -78,6 +78,32 @@ public class Bloxnode extends Bloxelement implements Visitable {
 					}
 				}
 			}
+			if (o.has("type")) {
+				type = o.getString("type");
+			}
+			if (!(this instanceof Bloxdesign) && o.has("clocks") && type != null && type.equals("functional")) {
+				JSONArray ca = o.getJSONArray("clocks");
+				// store the array for now, we'll need a 2nd pass to build the actual connections
+				uput("clocks", ca);
+				//				for (Object co: ca) {
+				//					if (co instanceof String) {
+				//						String conn = (String)co;
+				//						System.out.println("Bloxnode " + name + " uses " + conn);
+				//						// add a clock port (and maybe a reset port)
+				//						
+				//						BloxGlobalConn cn = Bloxdesign.globalconns.get(conn);
+				//						if (cn == null) {
+				//							throw new BloxException("Connecting to a non-existing clock: " + conn);
+				//						}
+				//						// register the endpoint with the connection
+				//						
+				//					} else {
+				//						System.err.println("Clocks: skipping object of class " + co.getClass().getName());
+				//					}
+				//				}
+			}
+
+
 
 		} catch (JSONException ex) {
 			ex.printStackTrace();
@@ -181,6 +207,18 @@ public class Bloxnode extends Bloxelement implements Visitable {
 	public String printHierarchy(int maxdepth) {
 		StringBuilder r = new StringBuilder(PP.I + "node " + name + "\n");
 		PP.down();
+		if (this instanceof Bloxdesign) {
+			Bloxdesign d = (Bloxdesign)this;
+			if (d.globalconns!=null && !d.globalconns.isEmpty()) {
+				r.append(PP.I + "Global connections:\n");
+				PP.down();
+				for (Bloxconn c: d.globalconns.values()) {
+					r.append(PP.I + c.toString() + "\n");
+				}
+				PP.up();
+			}
+		}
+
 		r.append(PP.I + "Port:\n");
 		PP.down();
 		for (Bloxport p: ports) {
@@ -197,6 +235,14 @@ public class Bloxnode extends Bloxelement implements Visitable {
 			r.append(PP.I + "Connections: (number: " + connections.size() + ")\n");
 			PP.down();
 			for (Bloxconn c: connections) {
+				r.append(PP.I + c.toString() + "\n");
+			}
+			PP.up();
+		}
+		if (localconnections != null) {
+			r.append(PP.I + "Local connections: (number: " + localconnections.size() + ")\n");
+			PP.down();
+			for (Bloxconn c: localconnections) {
 				r.append(PP.I + c.toString() + "\n");
 			}
 			PP.up();
@@ -251,12 +297,17 @@ public class Bloxnode extends Bloxelement implements Visitable {
 			String idx = null;
 			if (sep > -1) {
 				idx = pn.substring(sep+1,  pn.indexOf(")"));
-				pn = pn.substring(0, sep - 1);
+				pn = pn.substring(0, sep);
 			}
 			Bloxport p = getPort(pn);
 			if (p == null) throw new BloxException("Port " + pn + " not found at " + toString());
 			Bloxendpoint ept = new Bloxendpoint(p);
-			ept.portidx = idx;
+			try {
+				ept.portindex = new Mparser(idx).parse();
+			} catch(Mexception ex) {
+				ex.printStackTrace();
+				throw new BloxException(ex.toString());
+			}
 			return ept;
 		}
 
@@ -278,13 +329,18 @@ public class Bloxnode extends Bloxelement implements Visitable {
 
 			for (Bloxport p: ports) {
 				boolean isslave = false;
+				System.out.println("  port: " + p);
 				if (p.direction.equals("in") || p.direction.equals("slave"))
 					isslave = true;
 				for (int i = 0; i < p.repeat; i++) {
 					String suffix = "";
 					if (p.repeat > 1) suffix = "_" + i;
-					for (Bloxbusport bp: p.type.ports) {
-						e.add(new VHDLport(p.name + "_" + bp.name + suffix, bp.enslave(isslave), VHDLstd_logic_vector.getVector(bp.width)));
+					if (p.type.equals(Bloxbus.WIRE)) {
+						e.add(new VHDLport(p.name, (isslave?"in":"out"), VHDLstd_logic.STD_LOGIC));
+					} else {
+						for (Bloxbusport bp: p.type.ports) {
+							e.add(new VHDLport(p.name + "_" + bp.name + suffix, bp.enslave(isslave), VHDLstd_logic_vector.getVector(bp.width)));
+						}
 					}
 				}
 			}
@@ -339,17 +395,23 @@ public class Bloxnode extends Bloxelement implements Visitable {
 				if (conn.haswire) {
 					System.out.println("local connections in " + name + " connection " + conn.name
 							+ " type " + conn.getType());
-					for (Bloxbusport bp: conn.getType().ports) {
+					if (conn.getType().equals(Bloxbus.WIRE)) {
 						int j = 0;
 						if (pdom == null) {
-							vhdlConnectBusport(a, instances, conn, paramized, bp, -1, -1, null);
+							vhdlConnectBusport(a, instances, conn, paramized, null, -1, -1, null);
 						} else for (Integer i: pdom) {
-							vhdlConnectBusport(a, instances, conn, paramized, bp, i.intValue(), j++, ldom);
+							vhdlConnectBusport(a, instances, conn, paramized, null, i.intValue(), j++, ldom);
 						}
-
-
+					} else {					
+						for (Bloxbusport bp: conn.getType().ports) {
+							int j = 0;
+							if (pdom == null) {
+								vhdlConnectBusport(a, instances, conn, paramized, bp, -1, -1, null);
+							} else for (Integer i: pdom) {
+								vhdlConnectBusport(a, instances, conn, paramized, bp, i.intValue(), j++, ldom);
+							}
+						}
 					}
-
 				}
 
 				for (Bloxendpoint ep: conn.endpoints) {
@@ -382,8 +444,14 @@ public class Bloxnode extends Bloxelement implements Visitable {
 		// parseq is parameter value in current iteration
 		if (seq > -1) suffix = "_" + seq;
 
-		VHDLsignal bs = new VHDLsignal("s_" + conn.name + "_" + bp.name + suffix, 
-				VHDLstd_logic_vector.getVector(bp.width));
+		VHDLsignal bs = null;
+		if (bp != null) {
+			bs = new VHDLsignal("s_" + conn.name + "_" + bp.name + suffix, 
+					VHDLstd_logic_vector.getVector(bp.width));
+		} else {
+			bs = new VHDLsignal("s_" + conn.name + suffix, 
+					VHDLstd_logic.STD_LOGIC); // TODO std_logic_vector support
+		}
 		a.add(bs);
 
 		try {
@@ -408,8 +476,8 @@ public class Bloxnode extends Bloxelement implements Visitable {
 				}
 
 				if (ep.isPort()) {
-					VHDLsymbol vp = e.get(ep.port.name + "_" + bp.name + suffix);
-					System.out.println("mapping port: " + ep.port.name + "_" + bp.name + suffix + " vhdl " + vp);
+					VHDLsymbol vp = e.get(ep.port.name + (bp!=null?("_" + bp.name):"") + suffix);
+					System.out.println("mapping port: " + ep.port.name + (bp!=null?("_" + bp.name):"") + suffix + " vhdl " + vp);
 					if (vp != null) {
 						if (vp instanceof VHDLport) {
 							VHDLport vport = (VHDLport)vp;
@@ -420,7 +488,7 @@ public class Bloxnode extends Bloxelement implements Visitable {
 							}
 						}
 					}
-					
+
 				} else {
 					int iseq = 0;
 					if (seq != -1) {
@@ -428,17 +496,24 @@ public class Bloxnode extends Bloxelement implements Visitable {
 							iseq = ep.getLastIndex().eval(paramvalues).get();
 							// todo use next() ?
 						} else {
-							iseq = seq;
+							iseq = seq; // ??
 						}
+
 					}
 					String portsuffix = "";
 					if (ep.portindex != null) {
 						portsuffix = "_" + ep.portindex.eval(paramvalues);
+						if (ep.getLastIndex() == null) {
+							iseq = 0; // wild assumption!
+						}
 					}
-					System.out.println("mapping: " + ep.port.name + "_" + bp.name + portsuffix + 
+					System.out.println("mapping: " + ep.port.name + (bp!=null?("_" + bp.name):"") + portsuffix + 
 							" endpoint " + ep + " seq=" + seq + " iseq=" + iseq);
 					System.out.println(" ep.path(0) = " + ep.getLast());
-					instances.get(ep.getLast()).get(iseq).map(ep.port.name + "_" + bp.name + portsuffix,
+
+					// does iseq refer to the instance or to the port? or both?
+
+					instances.get(ep.getLast()).get(iseq).map(ep.port.name + (bp!=null?("_" + bp.name):"") + portsuffix,
 							bs);
 				}
 
@@ -461,6 +536,38 @@ public class Bloxnode extends Bloxelement implements Visitable {
 			}
 		} catch(BloxException ex) {
 			ex.printStackTrace();
+		}
+	}
+
+	public void connectGlobals() {
+		if (has("clocks")) {
+			JSONArray ca = (JSONArray)get("clocks");
+			for (Object co: ca) {
+				if (!(co instanceof String)) {
+					System.err.println("connectGlobals: not expecting " + co.getClass().getName());
+					System.exit(1);
+				}
+				String cs = (String) co;
+				BloxGlobalConn gc = Bloxdesign.current.globalconns.get(cs);
+				if (gc == null) {
+					System.err.println("connectGlobals: node " + name + ": cannot find clock " + cs);
+					System.err.println(Bloxdesign.current.globalconns);
+					System.exit(1);
+				}
+				Bloxport p = new Bloxport(cs, this, gc.type);
+				p.direction = "slave";
+//				Bloxendpoint ep = new Bloxendpoint(p);
+				// TODO and what about the path?
+				Bloxendpoint ep = Bloxdesign.current.findEndBlock(name).setPort(p);
+				ep.getLast().addPort(p);
+				System.out.println("*node::connectglobals* node " + name + " new endpoint " + ep);
+				try {
+					gc.add(ep);
+				} catch (BloxException ex) {
+					ex.printStackTrace();
+					System.exit(-1);
+				}
+			}
 		}
 	}
 

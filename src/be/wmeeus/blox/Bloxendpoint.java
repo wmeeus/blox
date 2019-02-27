@@ -8,7 +8,7 @@ import be.wmeeus.symmath.util.Mexception;
 public class Bloxendpoint {
 	Bloxport port = null;
 	Mnode portindex = null;
-	String portidx = null;
+//	String portidx = null;
 	private ArrayList<Bloxnode> path = null;
 	private ArrayList<Mnode> indices = null;
 	
@@ -44,8 +44,9 @@ public class Bloxendpoint {
 		}
 	}
 	
-	public void setPort(Bloxport p) {
+	public Bloxendpoint setPort(Bloxport p) {
 		port = p;
+		return this;
 	}
 	
 //	public void setIndex(String s) {
@@ -102,9 +103,9 @@ public class Bloxendpoint {
 		String r = "noport";
 		if (port != null) {
 			r = port.name;
-			if (portidx != null) {
-				r += "(" + portidx + ")";
-			}
+//			if (portidx != null) {
+//				r += "(" + portidx + ")";
+//			}
 			if (portindex != null) {
 				r += "(" + portindex + ")";
 			}

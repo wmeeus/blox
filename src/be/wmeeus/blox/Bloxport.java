@@ -43,7 +43,11 @@ public class Bloxport extends Bloxelement {
 		if (direction != null) {
 			r += direction + " ";
 		}
-		r += type.name;
+		if (type != null) {
+			r += type.name;
+		} else {
+			r += "null type";
+		}
 		if (repeat > 1) {
 			r += "(" + repeat + ")";
 		}
@@ -55,6 +59,9 @@ public class Bloxport extends Bloxelement {
 	}
 
 	public boolean isMaster() {
+		if (direction == null) {
+			System.err.println("*ERROR* direction not filled in at port " + toString() + " of " + parent);
+		}
 		if (direction.equals("master") || direction.endsWith("out")) return true;
 		return false;
 	}
