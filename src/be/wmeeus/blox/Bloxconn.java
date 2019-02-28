@@ -26,7 +26,7 @@ public class Bloxconn {
 		name = o.getString("name");
 		if (o.has("parameter")) {
 			parameter = Bloxparameter.get(o.getJSONObject("parameter"));
-			System.out.println("Found parameter " + parameter);
+//			System.out.println("Found parameter " + parameter);
 		}
 
 		JSONArray eps = o.getJSONArray("endpoints");
@@ -208,7 +208,7 @@ public class Bloxconn {
 	}
 
 	public Bloxendpoint connectUp(Bloxnode parent) throws BloxException {
-		System.out.println(" connectUp start: " + this + " parent=" + parent);
+//		System.out.println(" connectUp start: " + this + " parent=" + parent);
 		connect(parent);
 		Bloxendpoint ep = getPort();
 		if (ep == null) {
@@ -237,17 +237,17 @@ public class Bloxconn {
 			//ep.portindex = endpoints.get(0).getLastIndex();
 			// some wild attempt...
 			ep.portindex = epx;
-			System.out.println(" connectUp new endpoint: " + ep);
+//			System.out.println(" connectUp new endpoint: " + ep);
 		} else {
-			System.out.println(" connectUp port found: " + ep);
+//			System.out.println(" connectUp port found: " + ep);
 		}
-		System.out.println(" connectUp end: " + this);
+//		System.out.println(" connectUp end: " + this);
 		return ep;
 	}
 
 	public void connect(Bloxnode parent) throws BloxException {
 		if (isLocal()) {
-			System.out.println("  Local connection found: " + this);
+//			System.out.println("  Local connection found: " + this);
 			parent.addLocalConnection(this);
 			return;
 		}
@@ -257,7 +257,7 @@ public class Bloxconn {
 			throw new BloxException("Connection " + name + ": deeper base not supported yet");
 		}
 
-		System.out.println("*connect* figuring out connection " + name + " in " + parent);
+//		System.out.println("*connect* figuring out connection " + name + " in " + parent);
 
 		// subconns contains connections that need to be propagated to the next deeper level
 		Hashtable<Bloxnode, Hashtable<Mnode, Bloxconn> > subconns = 
@@ -286,7 +286,7 @@ public class Bloxconn {
 				conaddm = new Hashtable<Mnode, Bloxconn>();
 				subconns.put(nnode, conaddm);
 			}
-			System.err.println("Bloxconn::connect* endpoint " + ep);
+//			System.err.println("Bloxconn::connect* endpoint " + ep);
 			Bloxconn conadd = null;
 			if (parameter == null) {
 				conadd = conaddm.get(Mvalue.ZERO);
@@ -312,7 +312,7 @@ public class Bloxconn {
 		}
 
 		if (!subconns.isEmpty()) {
-			System.out.println("Deep connection " + name);
+//			System.out.println("Deep connection " + name);
 
 			for (Bloxnode en: subconns.keySet()) {
 				Hashtable<Mnode, Bloxconn> cm = subconns.get(en);
@@ -324,8 +324,8 @@ public class Bloxconn {
 		}
 
 		localconn.parameter = this.parameter;
-		System.out.println(" original : " + toString());
-		System.out.println(" localized: " + localconn.toString());
+//		System.out.println(" original : " + toString());
+//		System.out.println(" localized: " + localconn.toString());
 	}
 
 	public Bloxbus getType() {

@@ -329,7 +329,7 @@ public class Bloxnode extends Bloxelement implements Visitable {
 
 			for (Bloxport p: ports) {
 				boolean isslave = false;
-				System.out.println("  port: " + p);
+//				System.out.println("  port: " + p);
 				if (p.direction.equals("in") || p.direction.equals("slave"))
 					isslave = true;
 				for (int i = 0; i < p.repeat; i++) {
@@ -367,7 +367,7 @@ public class Bloxnode extends Bloxelement implements Visitable {
 				boolean paramized = false;
 				ArrayList<Integer> pdom = null;
 				if (conn.parameter != null) {
-					System.out.println("Parameterized local connection in node " + name + ": " + conn);
+//					System.out.println("Parameterized local connection in node " + name + ": " + conn);
 					paramized = true;
 					for (Bloxendpoint ep: conn.endpoints) {
 						Mnode indp = ep.getIndex(0);
@@ -380,7 +380,7 @@ public class Bloxnode extends Bloxelement implements Visitable {
 									for (Integer i: ldom) {
 										if (!pdom.contains(i)) {
 											pdom.add(i);
-											System.err.println("*Warning* different domains in " + this);
+//											System.err.println("*Warning* different domains in " + this);
 										}
 									}
 								}
@@ -393,8 +393,8 @@ public class Bloxnode extends Bloxelement implements Visitable {
 				}
 
 				if (conn.haswire) {
-					System.out.println("local connections in " + name + " connection " + conn.name
-							+ " type " + conn.getType());
+//					System.out.println("local connections in " + name + " connection " + conn.name
+//							+ " type " + conn.getType());
 					if (conn.getType().equals(Bloxbus.WIRE)) {
 						int j = 0;
 						if (pdom == null) {
@@ -477,7 +477,7 @@ public class Bloxnode extends Bloxelement implements Visitable {
 
 				if (ep.isPort()) {
 					VHDLsymbol vp = e.get(ep.port.name + (bp!=null?("_" + bp.name):"") + suffix);
-					System.out.println("mapping port: " + ep.port.name + (bp!=null?("_" + bp.name):"") + suffix + " vhdl " + vp);
+//					System.out.println("mapping port: " + ep.port.name + (bp!=null?("_" + bp.name):"") + suffix + " vhdl " + vp);
 					if (vp != null) {
 						if (vp instanceof VHDLport) {
 							VHDLport vport = (VHDLport)vp;
@@ -507,14 +507,20 @@ public class Bloxnode extends Bloxelement implements Visitable {
 							iseq = 0; // wild assumption!
 						}
 					}
-					System.out.println("mapping: " + ep.port.name + (bp!=null?("_" + bp.name):"") + portsuffix + 
-							" endpoint " + ep + " seq=" + seq + " iseq=" + iseq);
-					System.out.println(" ep.path(0) = " + ep.getLast());
+//					System.out.println("mapping: " + ep.port.name + (bp!=null?("_" + bp.name):"") + portsuffix + 
+//							" endpoint " + ep + " seq=" + seq + " iseq=" + iseq);
+//					System.out.println(" ep.path(0) = " + ep.getLast());
 
 					// does iseq refer to the instance or to the port? or both?
-
-					instances.get(ep.getLast()).get(iseq).map(ep.port.name + (bp!=null?("_" + bp.name):"") + portsuffix,
-							bs);
+					ArrayList<VHDLinstance> insts = instances.get(ep.getLast());
+					if (!paramized && insts.size() > 1) {
+						for (VHDLinstance inst: insts) 
+							inst.map(ep.port.name + (bp!=null?("_" + bp.name):"") + portsuffix,
+									bs);
+					} else {
+						insts.get(iseq).map(ep.port.name + (bp!=null?("_" + bp.name):"") + portsuffix,
+								bs);
+					}
 				}
 
 			}
@@ -528,7 +534,7 @@ public class Bloxnode extends Bloxelement implements Visitable {
 		if (connections == null || connections.isEmpty()) {
 			return;
 		}
-		System.out.println("Connecting nodes in " + name + ": " + connections.size() + " connection(s)");
+//		System.out.println("Connecting nodes in " + name + ": " + connections.size() + " connection(s)");
 		try {
 			for (Bloxconn c: connections) {
 				// make the connection
@@ -556,11 +562,11 @@ public class Bloxnode extends Bloxelement implements Visitable {
 				}
 				Bloxport p = new Bloxport(cs, this, gc.type);
 				p.direction = "slave";
-//				Bloxendpoint ep = new Bloxendpoint(p);
+				//				Bloxendpoint ep = new Bloxendpoint(p);
 				// TODO and what about the path?
 				Bloxendpoint ep = Bloxdesign.current.findEndBlock(name).setPort(p);
 				ep.getLast().addPort(p);
-				System.out.println("*node::connectglobals* node " + name + " new endpoint " + ep);
+//				System.out.println("*node::connectglobals* node " + name + " new endpoint " + ep);
 				try {
 					gc.add(ep);
 				} catch (BloxException ex) {

@@ -1,5 +1,5 @@
-
 *.class
 *.vhdl
 work/design.json
-*.json~
+*~
+work/i*b.json
