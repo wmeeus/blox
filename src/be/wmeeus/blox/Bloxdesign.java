@@ -40,6 +40,32 @@ public class Bloxdesign extends Bloxnode {
 		return "design " + name;
 	}
 
+	public static Bloxdesign read(String file) throws BloxException {
+		if (file == null) 
+			throw new BloxException("NULL filename");
+
+		Bloxdesign design = null;
+		try {
+			if (file.endsWith(".json")) {
+				JSONObject o = new JSONObject(new JSONTokener(new FileInputStream(file)));
+				if (o.has("design")) {
+					design = new Bloxdesign(o.getJSONObject("design"));
+//					design.accept(new ConnectGlobals());
+//					design.accept(new ConnectNodes());
+				} else {
+					throw new BloxException("JSON doesn't contain a design");
+				}
+			} else {
+				throw new BloxException("Expecting a JSON file with .json extension");
+			}
+		} catch (Exception ex) {
+			ex.printStackTrace();
+			throw new BloxException(ex.toString());
+		}
+
+		return design;
+	}
+	
 	public static void main(String[] args) {
 		Bloxdesign design = null;
 		try {

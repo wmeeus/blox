@@ -8,6 +8,7 @@ import org.json.*;
 public class Bloxbus {
 	String name;
 	ArrayList<Bloxbusport> ports = null;
+	private static Hashtable<Integer, Bloxbus> vectors = new Hashtable<Integer, Bloxbus>(); 
 
 	static Hashtable<String, Bloxbus> alltypes = new Hashtable<String, Bloxbus>(); 
 	public static Bloxbus get(String n) throws BloxException {
@@ -19,6 +20,15 @@ public class Bloxbus {
 	public static Bloxbus WIRE;
 	public static Bloxbus CLKRST;
 	
+	public static Bloxbus VECTOR(int n) {
+		if (n==1) return WIRE;
+		if (vectors.containsKey(n)) return vectors.get(n);
+		Bloxbus b = null;
+		b = new Bloxbus(n);
+		vectors.put(Integer.valueOf(n), b);
+		return b;
+	}
+	
 	static {
 		try {
 			WIRE = new Bloxbus("wire");
@@ -28,11 +38,22 @@ public class Bloxbus {
 		}
 	}
 	
+	public Bloxbus(int n) {
+		name = "vector(" + n + ")";
+		ports = new ArrayList<Bloxbusport>();
+		ports.add(new Bloxbusport("", "out", n, this));
+	}
+	
 	public Bloxbus(String n) throws BloxException {
 		name = n;
-		alltypes.put(n, this);
 
 		if (n.equals("clkrst")) {
+			if (name.endsWith("clk")) {
+				name = name.substring(0, n.length() - 3);
+			}
+			if (name.endsWith("_")) {
+				name = name.substring(0, n.length() - 1);
+			}
 			ports = new ArrayList<Bloxbusport>();
 			ports.add(new Bloxbusport("clk", "out", 1, this));
 			ports.add(new Bloxbusport("rst", "out", 1, this));
@@ -62,6 +83,7 @@ public class Bloxbus {
 			} catch (FileNotFoundException ex) {
 				System.out.println("*Warning* bus definition not found: " + n + ".json");
 			}
+			alltypes.put(name, this);
 		}
 	}
 

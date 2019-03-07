@@ -19,6 +19,13 @@ public class Bloxport extends Bloxelement {
 		type = t;
 	}
 
+	public Bloxport(String s, String d, Bloxbus t, Bloxnode n) {
+		name = s;
+		parent = n;
+		direction = d;
+		type = t;
+	}
+
 	public Bloxport(JSONObject o, Bloxnode n) throws BloxException {
 		super(o);
 		parent = n;

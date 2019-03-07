@@ -17,7 +17,17 @@ public class Bloxnode extends Bloxelement implements Visitable {
 	ArrayList<Bloxconn> connections = null;
 	ArrayList<Bloxconn> localconnections = null;
 	String type = null;
+	static ArrayList<Bloxnode> foreignnodes = null;
+	JSONObject json = null;
+	
+	/**
+	 * May contain any data for the foreign type. 
+	 * The class(es) implementing the foreign type will interpret these data. 
+	 */
+	String foreign = null;
 
+	boolean isforeign = false;
+	
 	public String getName() {
 		return name;
 	}
@@ -42,6 +52,7 @@ public class Bloxnode extends Bloxelement implements Visitable {
 
 	public Bloxnode(JSONObject o) throws BloxException {
 		super(o);
+		json = o;
 		try {
 			allnodes.put(name, this);
 
@@ -80,6 +91,17 @@ public class Bloxnode extends Bloxelement implements Visitable {
 			}
 			if (o.has("type")) {
 				type = o.getString("type");
+				if (type.startsWith("foreign:")) {
+					type = type.substring(8);
+					isforeign = true;
+					// TODO list may be unnecessary if we resolve foreign nodes immediately 
+					if (foreignnodes == null) foreignnodes = new ArrayList<Bloxnode>();
+					foreignnodes.add(this);
+					if (o.has("foreign")) {
+						foreign = o.getString("foreign");
+					}
+					System.out.println("*Bloxnode* discovered foreign node " + name + " of type " + type + " with data " + foreign);
+				}
 			}
 			if (!(this instanceof Bloxdesign) && o.has("clocks") && type != null && type.equals("functional")) {
 				JSONArray ca = o.getJSONArray("clocks");
@@ -272,22 +294,18 @@ public class Bloxnode extends Bloxelement implements Visitable {
 	}
 
 	public Bloxnode findBlock(String nn) {
-		// TODO Go through hierarchy, return block
 		for (Bloxinst bi: children) {
 			Bloxnode bn = bi.findBlock(nn);
 			if (bn!=null) return bn;
 		}
-
 		return null;
 	}
 
 	public Bloxendpoint findEndBlock(String nn) {
-		// TODO Go through hierarchy, return block
 		for (Bloxinst bi: children) {
 			Bloxendpoint bn = bi.findEndBlock(nn);
 			if (bn!=null) return bn;
 		}
-
 		return null;
 	}
 
@@ -320,6 +338,12 @@ public class Bloxnode extends Bloxelement implements Visitable {
 	}
 
 	VHDLentity e = null;
+	
+	public VHDLentity setVHDL(VHDLentity ve) {
+		e = ve;
+		return ve;
+	}
+	
 	public VHDLentity vhdl() throws BloxException {
 		System.out.println("*Bloxnode::vhdl* node: " + name);
 		if (e!=null) return e;
@@ -412,10 +436,6 @@ public class Bloxnode extends Bloxelement implements Visitable {
 							}
 						}
 					}
-				}
-
-				for (Bloxendpoint ep: conn.endpoints) {
-
 				}
 			}
 
@@ -563,7 +583,6 @@ public class Bloxnode extends Bloxelement implements Visitable {
 				Bloxport p = new Bloxport(cs, this, gc.type);
 				p.direction = "slave";
 				//				Bloxendpoint ep = new Bloxendpoint(p);
-				// TODO and what about the path?
 				Bloxendpoint ep = Bloxdesign.current.findEndBlock(name).setPort(p);
 				ep.getLast().addPort(p);
 //				System.out.println("*node::connectglobals* node " + name + " new endpoint " + ep);
@@ -576,5 +595,22 @@ public class Bloxnode extends Bloxelement implements Visitable {
 			}
 		}
 	}
+	
+	public void implementForeign() {
+		// TODO implement foreign types like VHDL, Verilog, IPxact... future work!
+		
+	}
+	
+	public boolean isForeign() {
+		return isforeign;
+	}
 
+	public String getType() {
+		return type;
+	}
+	
+	public String getForeign() {
+		return foreign;
+	}
+	
 }

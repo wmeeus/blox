@@ -1,0 +1,14 @@
+{
+    "name": "rs232",
+    "topology": "pointopoint",
+    "port": [
+	{
+	    "name": "tx",
+	    "master_dir": "out"
+	},
+	{
+	    "name": "rx",
+	    "master_in": true
+	}
+    ]
+}
