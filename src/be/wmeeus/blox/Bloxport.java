@@ -68,6 +68,7 @@ public class Bloxport extends Bloxelement {
 	public boolean isMaster() {
 		if (direction == null) {
 			System.err.println("*ERROR* direction not filled in at port " + toString() + " of " + parent);
+			return false;
 		}
 		if (direction.equals("master") || direction.endsWith("out")) return true;
 		return false;

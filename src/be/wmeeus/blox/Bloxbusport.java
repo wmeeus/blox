@@ -7,6 +7,7 @@ public class Bloxbusport {
 	String master_dir;
 	int width = 1;
 	Bloxbus parent = null;
+	String type = null; // null type means vector or wire
 	
 	public Bloxbusport(String n, String m, int w, Bloxbus p) {
 		name = n;
@@ -33,6 +34,9 @@ public class Bloxbusport {
 			if (o.has("width")) {
 				width = o.getInt("width");
 			}
+			if (o.has("type")) {
+				type = o.getString("type");
+			}
 		} catch (JSONException ex) {
 			ex.printStackTrace();
 			throw new BloxException(ex.toString());
@@ -48,10 +52,16 @@ public class Bloxbusport {
 	}
 	
 	public String enslave(boolean b) {
-		if (!b) return master_dir;
+		if (!b || parent.symmetric) return master_dir;
 		if (master_dir.equals("in")) return "out";
 		if (master_dir.equals("out")) return "in";
 		return master_dir;
 	}
 
+	public String getType() {
+		if (type != null) return type;
+		if (width > 1) return "vector";
+		return "wire";
+	}
+	
 }

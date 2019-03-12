@@ -331,6 +331,7 @@ public class Bloxconn {
 	public Bloxbus getType() {
 		// TODO Auto-generated method stub
 		if (type == null && endpoints != null && !endpoints.isEmpty()) {
+			System.out.println("*debug* Bloxbus::getType : " + toString());
 			type = endpoints.get(0).port.type;
 		}
 
