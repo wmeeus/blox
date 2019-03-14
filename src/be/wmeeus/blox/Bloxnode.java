@@ -120,29 +120,11 @@ public class Bloxnode extends Bloxelement implements Visitable {
 					System.out.println("*Bloxnode* discovered foreign node " + name + " of type " + type + " with data " + foreign);
 				}
 			}
-			if (!(this instanceof Bloxdesign) && o.has("clocks") && type != null && type.equals("functional")) {
-				JSONArray ca = o.getJSONArray("clocks");
+			if (!(this instanceof Bloxdesign) && o.has("connectsTo")) {
+				JSONArray ca = o.getJSONArray("connectsTo");
 				// store the array for now, we'll need a 2nd pass to build the actual connections
-				uput("clocks", ca);
-				//				for (Object co: ca) {
-				//					if (co instanceof String) {
-				//						String conn = (String)co;
-				//						System.out.println("Bloxnode " + name + " uses " + conn);
-				//						// add a clock port (and maybe a reset port)
-				//						
-				//						BloxGlobalConn cn = Bloxdesign.globalconns.get(conn);
-				//						if (cn == null) {
-				//							throw new BloxException("Connecting to a non-existing clock: " + conn);
-				//						}
-				//						// register the endpoint with the connection
-				//						
-				//					} else {
-				//						System.err.println("Clocks: skipping object of class " + co.getClass().getName());
-				//					}
-				//				}
+				uput("connectsTo", ca);
 			}
-
-
 
 		} catch (JSONException ex) {
 			ex.printStackTrace();
@@ -369,6 +351,15 @@ public class Bloxnode extends Bloxelement implements Visitable {
 			VHDLarchitecture a = new VHDLarchitecture("netlist", e); 
 
 			for (Bloxport p: ports) {
+				if (p == null) {
+					System.err.println("NULL port in " + toString());
+					continue;
+				}
+				if (p.direction == null) {
+					System.err.println("NULL direction in port " + p.name + " of " + toString());
+					p.direction = "master";
+				}
+				
 				boolean isslave = false;
 				//				System.out.println("  port: " + p);
 				if (p.direction.equals("in") || p.direction.equals("slave"))
@@ -421,7 +412,7 @@ public class Bloxnode extends Bloxelement implements Visitable {
 									for (Integer i: ldom) {
 										if (!pdom.contains(i)) {
 											pdom.add(i);
-											//											System.err.println("*Warning* different domains in " + this);
+											//System.err.println("*Warning* different domains in " + this);
 										}
 									}
 								}
@@ -438,7 +429,7 @@ public class Bloxnode extends Bloxelement implements Visitable {
 							+ " type " + conn.getType());
 					if (conn.getType().equals(Bloxbus.WIRE)) {
 						int j = 0;
-						System.out.println("WIRE map");
+//						System.out.println("WIRE map");
 						if (pdom == null) {
 							vhdlConnectBusport(a, instances, conn, paramized, null, -1, -1, null);
 						} else for (Integer i: pdom) {
@@ -446,7 +437,7 @@ public class Bloxnode extends Bloxelement implements Visitable {
 						}
 					} else {					
 						for (Bloxbusport bp: conn.getType().ports) {
-							System.out.println("BUS map port " + bp + " => " + conn.getType().ports.size());
+//							System.out.println("BUS map port " + bp + " => " + conn.getType().ports.size());
 							int j = 0;
 							if (pdom == null) {
 								vhdlConnectBusport(a, instances, conn, paramized, bp, -1, -1, null);
@@ -604,26 +595,32 @@ public class Bloxnode extends Bloxelement implements Visitable {
 	}
 
 	public void connectGlobals() {
-		if (has("clocks")) {
-			JSONArray ca = (JSONArray)get("clocks");
+		if (has("connectsTo")) {
+			JSONArray ca = (JSONArray)get("connectsTo");
 			for (Object co: ca) {
 				if (!(co instanceof String)) {
 					System.err.println("connectGlobals: not expecting " + co.getClass().getName());
 					System.exit(1);
 				}
 				String cs = (String) co;
+				String cn = cs;
+				if (cs.contains("<=")) {
+					int ix = cs.indexOf("<=");
+					cn = cs.substring(0, ix);
+					cs = cs.substring(ix + 2);
+				}
+				
 				BloxGlobalConn gc = Bloxdesign.current.globalconns.get(cs);
 				if (gc == null) {
-					System.err.println("connectGlobals: node " + name + ": cannot find clock " + cs);
+					System.err.println("connectGlobals: node " + name + ": cannot find global connection " + cs);
 					System.err.println(Bloxdesign.current.globalconns);
 					System.exit(1);
 				}
-				Bloxport p = new Bloxport(cs, this, gc.type);
+				Bloxport p = new Bloxport(cn, this, gc.type);
 				p.direction = "slave";
-				//				Bloxendpoint ep = new Bloxendpoint(p);
+				ports.add(p);
 				Bloxendpoint ep = Bloxdesign.current.findEndBlock(name).setPort(p);
-				ep.getLast().addPort(p);
-				//				System.out.println("*node::connectglobals* node " + name + " new endpoint " + ep);
+				System.out.println("*node::connectglobals* node " + name + " new endpoint " + ep);
 				try {
 					gc.add(ep);
 				} catch (BloxException ex) {
