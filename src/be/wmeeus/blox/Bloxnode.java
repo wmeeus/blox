@@ -154,6 +154,12 @@ public class Bloxnode extends Bloxelement implements Visitable {
 		localconnections.add(c);
 	}
 
+	public Bloxinst addInstance(Bloxinst i) {
+		if (children == null) children = new ArrayList<Bloxinst>();
+		children.add(i);
+		return i;
+	}
+	
 	public Bloxinst getChild(String n) {
 		if (children ==  null || children.isEmpty()) return null;
 		for (Bloxinst i: children) {
@@ -364,6 +370,7 @@ public class Bloxnode extends Bloxelement implements Visitable {
 				//				System.out.println("  port: " + p);
 				if (p.direction.equals("in") || p.direction.equals("slave"))
 					isslave = true;
+				// TODO repeat vs. array
 				for (int i = 0; i < p.repeat; i++) {
 					String suffix = "";
 					if (p.repeat > 1) suffix = "_" + i;
@@ -425,8 +432,8 @@ public class Bloxnode extends Bloxelement implements Visitable {
 				}
 
 				if (conn.haswire) {
-					System.out.println("local connections in " + name + " connection " + conn.name
-							+ " type " + conn.getType());
+//					System.out.println("local connections in " + name + " connection " + conn.name
+//							+ " type " + conn.getType());
 					if (conn.getType().equals(Bloxbus.WIRE)) {
 						int j = 0;
 //						System.out.println("WIRE map");
@@ -557,10 +564,15 @@ public class Bloxnode extends Bloxelement implements Visitable {
 						// TODO figure out what to do
 					}
 
-					String fullportname = portprefix + ep.port.name + (bp!=null?("_" + bp.name):"") + portsuffix;
-					System.out.println("mapping: " + fullportname + 
-							" endpoint " + ep + " seq=" + seq + " iseq=" + iseq);
-					System.out.println(" ep.path(0) = " + ep.getLast());
+					String fullportname = null;
+					if (ep.port.name.isEmpty() && portprefix.endsWith("_")) {
+						fullportname = portprefix.substring(0, portprefix.length() - 1) + (bp!=null?("_" + bp.name):"") + portsuffix;
+					} else {
+						fullportname = portprefix + ep.port.name + (bp!=null?("_" + bp.name):"") + portsuffix;
+					}
+//					System.out.println("mapping: " + fullportname + 
+//							" endpoint " + ep + " seq=" + seq + " iseq=" + iseq);
+//					System.out.println(" ep.path(0) = " + ep.getLast());
 
 					// does iseq refer to the instance or to the port? or both?
 					if (!paramized && insts.size() > 1) {

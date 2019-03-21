@@ -9,6 +9,11 @@ public class Bloxbus {
 	String name;
 	ArrayList<Bloxbusport> ports = null;
 	public boolean symmetric = false;
+	boolean simple = false;
+
+	public boolean isSimple() {
+		return simple;
+	}
 	
 	private static Hashtable<Integer, Bloxbus> vectors = new Hashtable<Integer, Bloxbus>(); 
 
@@ -34,7 +39,9 @@ public class Bloxbus {
 	static {
 		try {
 			WIRE = new Bloxbus("wire");
+			WIRE.simple = true;
 			CLKRST = new Bloxbus("clkrst");
+			CLKRST.simple = true;
 		} catch (BloxException ex) {
 			ex.printStackTrace();
 		}
@@ -44,18 +51,13 @@ public class Bloxbus {
 		name = "vector(" + n + ")";
 		ports = new ArrayList<Bloxbusport>();
 		ports.add(new Bloxbusport("", "out", n, this));
+		simple = true;
 	}
 	
 	public Bloxbus(String n) throws BloxException {
 		name = n;
 
 		if (n.equals("clkrst")) {
-			if (name.endsWith("clk")) {
-				name = name.substring(0, n.length() - 3);
-			}
-			if (name.endsWith("_")) {
-				name = name.substring(0, n.length() - 1);
-			}
 			ports = new ArrayList<Bloxbusport>();
 			ports.add(new Bloxbusport("clk", "out", 1, this));
 			ports.add(new Bloxbusport("rst", "out", 1, this));
@@ -95,5 +97,51 @@ public class Bloxbus {
 
 	public String toString() {
 		return "bus " + name;
+	}
+	
+	static Hashtable<String, Bloxnode> connectors = null;
+	public static Bloxnode getConnector(Bloxbus slave, Bloxbus master) throws BloxException {
+		ArrayList<Bloxbus> slvs = new ArrayList<Bloxbus>();
+		slvs.add(slave);
+		System.out.println("*Bloxbus::getConnector* master " + master + " slaves " + slvs);
+		return getConnector(slvs, master);
+	}
+	
+	public static Bloxnode getConnector(ArrayList<Bloxbus> slaves, Bloxbus master) throws BloxException {
+		String nm = null;
+		if (connectors == null) connectors = new Hashtable<String, Bloxnode>();
+		if (slaves == null) {
+			nm = master.name + "_" + master.name;
+		} else {
+			for (Bloxbus s: slaves) {
+				if (nm == null) {
+					nm = s.name;
+				} else {
+					nm += "_" + s.name;
+				}
+			}
+			nm += "_2_" + master.name;
+		}
+		Bloxnode n = connectors.get(nm);
+		if (n != null) return n;
+		
+		n = new Bloxnode(nm);
+		connectors.put(nm,  n);
+		// TODO clocks & resets
+		// TODO cdc
+		if (slaves != null) {
+			for (Bloxbus s: slaves) {
+				n.addPort(new Bloxport("s_" + s.name, "slave", s, n));
+			} 
+			n.addPort(new Bloxport("m_" + master.name, "master", master, n));
+		} else {
+			n.addPort(new Bloxport("s_" + master.name, "slave", master, n));
+			// TODO array!!
+			n.addPort(new Bloxport("m_" + master.name, "master", master, n));
+		}
+		System.out.println("*new Bloxbus connector* " + nm);
+		System.out.println(n.vhdl());
+		// TODO VHDL to file
+		return n;
 	}
 }

@@ -26,7 +26,10 @@ public class Bloxconn {
 		name = o.getString("name");
 		if (o.has("parameter")) {
 			parameter = Bloxparameter.get(o.getJSONObject("parameter"));
-//			System.out.println("Found parameter " + parameter);
+			//			System.out.println("Found parameter " + parameter);
+		}
+		if (o.has("type")) {
+			type = Bloxbus.get(o.getString("type"));
 		}
 
 		JSONArray eps = o.getJSONArray("endpoints");
@@ -41,53 +44,19 @@ public class Bloxconn {
 			Bloxendpoint ept = null;
 
 			if (pn.startsWith(":")) {
-				//				System.out.println("*Bloxconn* connecting local endpoint: " + ep);
-
 				// local port
 				nb = b; // port of the current block
 				hasport = true;
 				p = nb.getPort(pn.substring(1));
 				ept = new Bloxendpoint(p);
 			} else {
-				//				System.out.println("*Bloxconn* connecting deeper endpoint: " + pn);
-
 				ept = b.findEndpoint(pn);
 			}
 
-			//			while (pn.contains(":")) {
-			//				int col = pn.indexOf(":");
-			//				String nn = pn.substring(0, col);
-			//				pn = pn.substring(col+1);
-			//				
-			//				col = nn.indexOf("(");
-			//				if (col > -1) {
-			//					nnindex = nn.substring(col+1, nn.indexOf(")"));
-			//					nn = nn.substring(0, col);
-			//				}
-			//
-			//				if (nn.length()==0) {
-			//					nb = b; // port of the current block
-			//					hasport = true;
-			//				} else {
-			//					ept = b.findEndBlock(nn);
-			//					if (ept == null) {
-			//						throw new BloxException("Cannot find block: " + ep + " (" + nn + ") in " + b.name);
-			//					}
-			//					ept.setIndex(nnindex);
-			//					System.out.println("Adding " + ept + " to " + this);
-			//					nb = ept.getLast();
-			//				}
-			//			}
-			//			p = nb.getPort(pn);
-			//			if (p == null) {
-			//				throw new BloxException("Cannot find port: " + ep + " (" + pn + ") in " + nb);
-			//			}
-			//			if (ept == null) {
-			//				ept = new Bloxendpoint(p);
-			//			} else {
-			//				ept.setPort(p);
-			//			}
 			add(ept);
+			if (type == null) {
+				type = ept.port.type;
+			}
 		}
 	}
 
@@ -123,16 +92,6 @@ public class Bloxconn {
 		connbaselevel = 0;
 		boolean done = false;
 		int npoints = endpoints.size();
-		if (npoints == 1) {
-			Bloxendpoint ep = endpoints.get(0);
-			if (!ep.isPort()) {
-				Bloxport p = new Bloxport(ep.port.name, parent, ep.port.type);
-				p.direction = ep.port.direction;
-				parent.addPort(p);
-				endpoints.add(new Bloxendpoint(p));
-			}
-			npoints = endpoints.size();
-		}
 		if (npoints < 2) { // not a proper connection
 			throw new BloxException("Connection " + name + " has fewer than 2 endpoints");
 		}
@@ -208,7 +167,7 @@ public class Bloxconn {
 	}
 
 	public Bloxendpoint connectUp(Bloxnode parent) throws BloxException {
-//		System.out.println(" connectUp start: " + this + " parent=" + parent);
+		System.out.println(" connectUp start: " + this + " parent=" + parent);
 		connect(parent);
 		Bloxendpoint ep = getPort();
 		if (ep == null) {
@@ -237,27 +196,29 @@ public class Bloxconn {
 			//ep.portindex = endpoints.get(0).getLastIndex();
 			// some wild attempt...
 			ep.portindex = epx;
-//			System.out.println(" connectUp new endpoint: " + ep);
+			System.out.println(" connectUp new endpoint: " + ep);
 		} else {
-//			System.out.println(" connectUp port found: " + ep);
+			System.out.println(" connectUp port found: " + ep);
 		}
-//		System.out.println(" connectUp end: " + this);
+		System.out.println(" connectUp end: " + this);
 		return ep;
 	}
 
 	public void connect(Bloxnode parent) throws BloxException {
 		if (isLocal()) {
-//			System.out.println("  Local connection found: " + this);
+			//			System.out.println("  Local connection found: " + this);
 			parent.addLocalConnection(this);
 			return;
 		}
 
 		Bloxnode bn = getBase(parent);
+		System.out.println("*Bloxconn::connect* connection " + toString() + " in parent " + parent.name + " base " + bn.name);
 		if (bn != parent) {
-			throw new BloxException("Connection " + name + ": deeper base not supported yet");
+			System.err.println(toString());
+			throw new BloxException("Connection " + name + ": deeper base not supported yet, parent " + parent.name + ", base " + bn.name);
 		}
 
-//		System.out.println("*connect* figuring out connection " + name + " in " + parent);
+		//		System.out.println("*connect* figuring out connection " + name + " in " + parent);
 
 		// subconns contains connections that need to be propagated to the next deeper level
 		Hashtable<Bloxnode, Hashtable<Mnode, Bloxconn> > subconns = 
@@ -280,13 +241,13 @@ public class Bloxconn {
 			// add it to a list of deeper-down connections for said instance
 			Bloxnode nnode = ep.get(0);
 			Bloxendpoint endstrip = ep.strip(1);
-			
+
 			Hashtable<Mnode, Bloxconn> conaddm = subconns.get(nnode);
 			if (conaddm == null) {
 				conaddm = new Hashtable<Mnode, Bloxconn>();
 				subconns.put(nnode, conaddm);
 			}
-//			System.err.println("Bloxconn::connect* endpoint " + ep);
+			//			System.err.println("Bloxconn::connect* endpoint " + ep);
 			Bloxconn conadd = null;
 			if (parameter == null) {
 				conadd = conaddm.get(Mvalue.ZERO);
@@ -305,33 +266,99 @@ public class Bloxconn {
 					conaddm.put(ep.getIndex(0), newconn);
 				}
 			}
-//			subconnind.put(endstrip, ep.getIndex(0));
+			//			subconnind.put(endstrip, ep.getIndex(0));
 			// figure out whether the connection includes a port of parent
 			// figure out where the master port is (parent port, deeper-down port...) (later)
 			// figure out whether a local bus is needed
 		}
 
 		if (!subconns.isEmpty()) {
-//			System.out.println("Deep connection " + name);
+			System.out.println("Deep connection " + name + " type " + type + " in " + parent);
+			System.out.println("Subconns: " + subconns);
 
 			for (Bloxnode en: subconns.keySet()) {
 				Hashtable<Mnode, Bloxconn> cm = subconns.get(en);
 				for (Mnode ix: cm.keySet()) {
 					Bloxconn c = cm.get(ix);
+					c.type = type;
+					Bloxport p = new Bloxport(name, en, type);
+					p.direction = c.hasMaster()?"master":"slave";
+					en.addPort(p);
+					c.add(new Bloxendpoint(p));
+
 					localconn.add(new Bloxendpoint(c.connectUp(en), en, ix)); // TODO index
 				}
 			}
 		}
 
 		localconn.parameter = this.parameter;
-//		System.out.println(" original : " + toString());
-//		System.out.println(" localized: " + localconn.toString());
+		//		System.out.println(" original : " + toString());
+		//		System.out.println(" localized: " + localconn.toString());
+
+		if (localconn.fanout() > 2 && type != null && !type.isSimple()) {
+			System.err.println("*Bloxconn::connect* complex local connection needs interface, type " + type);
+			System.out.println(" localized: " + localconn.toString());
+			localconn.type = type;
+			localconn.insertInterface(parent);
+		}
+
+	}
+
+	private void insertInterface(Bloxnode parent) throws BloxException {
+		// distinguish master port (one) and slave ports (multiple)
+		// instantiate the interface
+		// connect master and slave ports
+		// set the fanout parameter
+
+		Bloxnode busif = Bloxbus.getConnector(type, type);
+		Bloxinst ifinst = parent.addInstance(new Bloxinst("inst_" + busif.getName(), busif));
+
+		ArrayList<Bloxendpoint> masterend = new ArrayList<Bloxendpoint>();
+		// add slave port of the interface
+
+		int fanout = 0;
+		for (Bloxendpoint ep: endpoints) {
+			if (ep.isMaster()) {
+				// keep master port in this local connection, together with the slave port of the interface
+				masterend.add(ep);
+				Bloxendpoint epslv = new Bloxendpoint(busif, null);
+				epslv.setPort(busif.getPort("m_" + type.name));
+				masterend.add(epslv);
+			} else {
+				// make a new local connection which connects this endpoint to the master port of the interface
+				Bloxconn fanconn = new Bloxconn("f_" + type.name + "_" + fanout);
+				fanconn.add(ep);
+				Bloxendpoint epmtr = new Bloxendpoint(busif, null);
+				epmtr.setPort(busif.getPort("s_" + type.name));
+				fanconn.add(epmtr);
+				parent.addLocalConnection(fanconn);
+				fanout++;
+			}
+		}
+		endpoints = masterend;
+
+	}
+	
+	/**
+	 * Calculates the local fanout of a connection taking into account the (potentially multiple)
+	 * instances of each endpoint.
+	 * 
+	 * @return the local fanout of this connection
+	 * @throws BloxException 
+	 */
+	public int fanout() throws BloxException {
+		int f = 0;
+		for (Bloxendpoint ep: endpoints) {
+//			f += ep.fanout(parameter);
+			f += 1; // TODO incomplete
+		}
+		return f;
 	}
 
 	public Bloxbus getType() {
 		// TODO Auto-generated method stub
 		if (type == null && endpoints != null && !endpoints.isEmpty()) {
-//			System.out.println("*debug* Bloxconn::getType : " + toString());
+			//			System.out.println("*debug* Bloxconn::getType : " + toString());
 			type = endpoints.get(0).port.type;
 		}
 

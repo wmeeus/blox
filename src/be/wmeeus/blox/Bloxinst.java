@@ -101,7 +101,7 @@ public class Bloxinst extends Bloxelement {
 		if (node.name.equals(nn)) return new Bloxendpoint(node, null); // TODO index
 		Bloxendpoint ep = node.findEndBlock(nn);
 		if (ep == null) return null;
-		return ep.add(node, null);
+		return ep.add(node, null, true);
 	}
 
 	public Bloxendpoint findEndpoint(String nn) throws BloxException {
@@ -123,7 +123,7 @@ public class Bloxinst extends Bloxelement {
 			if (ept == null) {
 				throw new BloxException("Not expecting null endpoint at " + toString());
 			}
-			ept.add(node, idx);
+			ept.add(node, idx, true);
 			return ept;
 		}
 		return null;

@@ -32,6 +32,14 @@ public class Bloxport extends Bloxelement {
 		try {
 			if (o.has("type")) {
 				type = Bloxbus.get(o.getString("type"));
+				if (type == Bloxbus.CLKRST) {
+					if (name.endsWith("clk")) {
+						name = name.substring(0, name.length() - 3);
+					}
+					if (name.endsWith("_")) {
+						name = name.substring(0, name.length() - 1);
+					}
+				}
 			}
 			if (o.has("direction")) {
 				direction = o.getString("direction");
