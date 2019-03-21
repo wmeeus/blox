@@ -160,6 +160,19 @@ public class Bloxnode extends Bloxelement implements Visitable {
 		return i;
 	}
 	
+	/**
+	 * Get the first instance of a particular node.
+	 * @param b the node
+	 * @return the requested instance
+	 */
+	public Bloxinst getInstanceOf(Bloxnode b) {
+		if (children == null) return null;
+		for (Bloxinst c: children) {
+			if (c.node.equals(b)) return c;
+		}
+		return null;
+	}
+	
 	public Bloxinst getChild(String n) {
 		if (children ==  null || children.isEmpty()) return null;
 		for (Bloxinst i: children) {

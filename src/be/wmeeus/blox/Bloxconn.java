@@ -286,7 +286,7 @@ public class Bloxconn {
 					en.addPort(p);
 					c.add(new Bloxendpoint(p));
 
-					localconn.add(new Bloxendpoint(c.connectUp(en), en, ix)); // TODO index
+					localconn.add(new Bloxendpoint(c.connectUp(en), parent.getInstanceOf(en), ix)); // TODO index
 				}
 			}
 		}
@@ -321,14 +321,14 @@ public class Bloxconn {
 			if (ep.isMaster()) {
 				// keep master port in this local connection, together with the slave port of the interface
 				masterend.add(ep);
-				Bloxendpoint epslv = new Bloxendpoint(busif, null);
+				Bloxendpoint epslv = new Bloxendpoint(ifinst, null);
 				epslv.setPort(busif.getPort("m_" + type.name));
 				masterend.add(epslv);
 			} else {
 				// make a new local connection which connects this endpoint to the master port of the interface
 				Bloxconn fanconn = new Bloxconn("f_" + type.name + "_" + fanout);
 				fanconn.add(ep);
-				Bloxendpoint epmtr = new Bloxendpoint(busif, null);
+				Bloxendpoint epmtr = new Bloxendpoint(ifinst, null);
 				epmtr.setPort(busif.getPort("s_" + type.name));
 				fanconn.add(epmtr);
 				parent.addLocalConnection(fanconn);

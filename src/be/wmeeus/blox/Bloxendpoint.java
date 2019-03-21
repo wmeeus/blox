@@ -9,32 +9,38 @@ public class Bloxendpoint {
 	Bloxport port = null;
 	Mnode portindex = null;
 	//	String portidx = null;
-	private ArrayList<Bloxnode> path = null;
+//	private ArrayList<Bloxnode> path = null;
+	private ArrayList<Bloxinst> ipath = null;
 	private ArrayList<Mnode> indices = null;
 
 	public Bloxendpoint(Bloxport p) {
 		port = p;
 	}
 
-	public Bloxendpoint(Bloxendpoint ep, Bloxnode n, Mnode ind) {
+	public Bloxendpoint(Bloxendpoint ep, Bloxinst n, Mnode ind) {
 		port = ep.port;
 		portindex = ep.portindex;
-		path = new ArrayList<Bloxnode>();
+//		path = new ArrayList<Bloxnode>();
+		ipath = new ArrayList<Bloxinst>();
 		indices = new ArrayList<Mnode>();
-		if (ep.path != null) {
-			path.addAll(ep.path);
+		if (ep.ipath != null) {
+//			path.addAll(ep.path);
+			ipath.addAll(ep.ipath);
 			indices.addAll(ep.indices);
 		}
 		if (n != null) {
-			path.add(n);
+//			path.add(n.node);
+			ipath.add(n);
 			indices.add(ind);
 		}
 	}
 
-	public Bloxendpoint(Bloxnode b, String ind) {
-		path = new ArrayList<Bloxnode>();
+	public Bloxendpoint(Bloxinst b, String ind) {
+//		path = new ArrayList<Bloxnode>();
+		ipath = new ArrayList<Bloxinst>();
 		indices = new ArrayList<Mnode>();
-		path.add(b);
+//		path.add(b.node);
+		ipath.add(b);
 		if (ind == null) {
 			indices.add(null);
 		} else {
@@ -51,21 +57,18 @@ public class Bloxendpoint {
 		return this;
 	}
 
-	//	public void setIndex(String s) {
-	//		System.out.println("*setIndex* " + s + " in " + toString() + " at " + (indices.size() - 1));
-	//		indices.set(indices.size() - 1, s);
-	//		System.out.println("*setIndex* " + toString());
-	//	}
-
-	public Bloxendpoint add(Bloxnode b, String ind, boolean atfront) {
-		if (path == null) {
-			path = new ArrayList<Bloxnode>();
+	public Bloxendpoint add(Bloxinst b, String ind, boolean atfront) {
+		if (ipath == null) {
+//			path = new ArrayList<Bloxnode>();
+			ipath = new ArrayList<Bloxinst>();
 			indices = new ArrayList<Mnode>();
 		}
 		if (atfront) {
-			path.add(b);
+//			path.add(b.node);
+			ipath.add(b);
 		} else {
-			path.add(0, b);
+//			path.add(0, b.node);
+			ipath.add(b);
 		}
 		if (ind == null) {
 			if (atfront) {
@@ -88,18 +91,28 @@ public class Bloxendpoint {
 	}
 
 	public Bloxnode get(int i) {
-		if (path == null || path.size() <= i) return null;
-		return path.get(path.size() - i - 1);
+		if (ipath == null || ipath.size() <= i) return null;
+		return ipath.get(ipath.size() - i - 1).getNode();
+	}
+
+	public Bloxinst getInst(int i) {
+		if (ipath == null || ipath.size() <= i) return null;
+		return ipath.get(ipath.size() - i - 1);
 	}
 
 	public Mnode getIndex(int i) {
-		if (path == null || path.size() <= i) return null;
-		return indices.get(path.size() - i - 1);
+		if (ipath == null || ipath.size() <= i) return null;
+		return indices.get(ipath.size() - i - 1);
 	}
 
 	public Bloxnode getLast() {
-		if (path == null) return null;
-		return path.get(0);
+		if (ipath == null) return null;
+		return ipath.get(0).getNode();
+	}
+
+	public Bloxinst getLastInst() {
+		if (ipath == null) return null;
+		return ipath.get(0);
 	}
 
 	public Mnode getLastIndex() {
@@ -108,8 +121,8 @@ public class Bloxendpoint {
 	}
 
 	public int pathlength() {
-		if (path == null) return 0;
-		return path.size();
+		if (ipath == null) return 0;
+		return ipath.size();
 	}
 
 	public String toString() {
@@ -125,7 +138,7 @@ public class Bloxendpoint {
 			}
 		}
 		int i = 0;
-		if (path != null) for (Bloxnode n: path) {
+		if (ipath != null) for (Bloxinst n: ipath) {
 			Mnode indx = indices.get(i++);
 			String idx = null;
 			if (indx != null ) {
@@ -133,7 +146,7 @@ public class Bloxendpoint {
 			} else {
 				idx = "";
 			}
-			r = n.name + idx + "/" + r;
+			r = n.name + "(" + n.node.name + ")" + idx + "/" + r;
 		}
 		//		if (indices != null) {
 		//			r += "[";
@@ -151,28 +164,30 @@ public class Bloxendpoint {
 	}
 
 	public boolean isLocal() {
-		if (path == null || path.size() < 2) return true;
+		if (ipath == null || ipath.size() < 2) return true;
 		return false;
 	}
 
 	public boolean isPort() {
-		if (path == null || path.isEmpty()) return true;
+		if (ipath == null || ipath.isEmpty()) return true;
 		return false;
 	}
 
 	public Bloxendpoint strip(int levels) throws BloxException {
 		//		System.out.println("*strip* original = " + toString() + " path/idx len " + path.size() + " " + indices.size());
 		if (levels == 0) return this;
-		int pathsize = path.size();
-		if ((path == null) || (levels > pathsize)) {
+		int pathsize = ipath.size();
+		if ((ipath == null) || (levels > pathsize)) {
 			throw new BloxException("Trying to strip more levels than available");
 		}
 		Bloxendpoint result = new Bloxendpoint(port);
 		if (levels < pathsize) {
-			result.path = new ArrayList<Bloxnode>();
+//			result.path = new ArrayList<Bloxnode>();
+			result.ipath = new ArrayList<Bloxinst>();
 			result.indices = new ArrayList<Mnode>();
 			for (int i = 0; i < pathsize - levels; i++) {
-				result.path.add(path.get(i));
+//				result.path.add(path.get(i));
+				result.ipath.add(ipath.get(i));
 				result.indices.add(indices.get(i));
 			}
 		}
@@ -182,14 +197,15 @@ public class Bloxendpoint {
 
 	public Bloxendpoint stripLast(int levels) throws BloxException {
 		if (levels > 0) {
-			if (path == null || indices == null) {
+			if (ipath == null || indices == null) {
 				throw new BloxException("Cannot strip: NULL path and/or indices");
 			}
-			if (path.size() < levels || indices.size() < levels) {
+			if (ipath.size() < levels || indices.size() < levels) {
 				throw new BloxException("Cannot strip: attempting to strip more levels than available");
 			}
 			for (int i = 0; i < levels; i++) {
-				path.remove(0);
+//				path.remove(0);
+				ipath.remove(0);
 				indices.remove(0);
 			}
 		}
