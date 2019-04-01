@@ -472,7 +472,7 @@ public class Bloxnode extends Bloxelement implements Visitable {
 						}
 					} else {					
 						for (Bloxbusport bp: conn.getType().ports) {
-//							System.out.println("BUS map port " + bp + " => " + conn.getType().ports.size());
+							System.out.println("BUS map port " + bp + " => " + conn.getType().ports.size());
 							int j = 0;
 							if (pdom == null) {
 								vhdlConnectBusport(a, instances, conn, paramized, bp, -1, -1, null);
@@ -512,7 +512,7 @@ public class Bloxnode extends Bloxelement implements Visitable {
 		VHDLsignal bs = null;
 		if (bp != null) {
 			bs = new VHDLsignal("s_" + conn.name + "_" + bp.name + suffix, 
-					VHDLstd_logic_vector.getVector(bp.width));
+					bp.getVHDLtype());
 		} else {
 			bs = new VHDLsignal("s_" + conn.name + suffix, 
 					VHDLstd_logic.STD_LOGIC); // TODO std_logic_vector support
