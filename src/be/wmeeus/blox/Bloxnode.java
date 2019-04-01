@@ -374,24 +374,36 @@ public class Bloxnode extends Bloxelement implements Visitable {
 					System.err.println("NULL port in " + toString());
 					continue;
 				}
+				if (p.type != null) e.addPackage(p.type.getVHDLpackage());
 				if (p.direction == null) {
 					System.err.println("NULL direction in port " + p.name + " of " + toString());
 					p.direction = "master";
 				}
 				
-				boolean isslave = false;
-				//				System.out.println("  port: " + p);
-				if (p.direction.equals("in") || p.direction.equals("slave"))
-					isslave = true;
+				boolean isslave = !p.isMaster();
+				VHDLgeneric pg = null;
+				if (p.isArrayport()) {
+					pg = new VHDLgeneric(p.name + "_fanout", "natural", "1");
+					e.add(pg);
+				}
+				
 				// TODO repeat vs. array
 				for (int i = 0; i < p.repeat; i++) {
 					String suffix = "";
 					if (p.repeat > 1) suffix = "_" + i;
 					if (p.type.equals(Bloxbus.WIRE)) {
-						e.add(new VHDLport(p.name, (isslave?"in":"out"), VHDLstd_logic.STD_LOGIC));
+						if (!p.isArrayport()) {
+							e.add(new VHDLport(p.name, (isslave?"in":"out"), VHDLstd_logic.STD_LOGIC));
+						} else {
+							e.add(new VHDLport(p.name, (isslave?"in":"out"), new VHDLstd_logic_vector(pg)));
+						}
 					} else {
 						for (Bloxbusport bp: p.type.ports) {
-							e.add(new VHDLport(p.name + "_" + bp.name + suffix, bp.enslave(isslave), VHDLstd_logic_vector.getVector(bp.width)));
+							if (!p.isArrayport() || !bp.fanout_array) {
+								e.add(new VHDLport(p.name + "_" + bp.name + suffix, bp.enslave(isslave), bp.getVHDLtype()));
+							} else {
+								e.add(new VHDLport(p.name + "_" + bp.name + suffix, bp.enslave(isslave), bp.getVHDLarrayType(pg)));
+							}
 						}
 					}
 				}
@@ -411,6 +423,9 @@ public class Bloxnode extends Bloxelement implements Visitable {
 						ArrayList<VHDLinstance> ai = new ArrayList<VHDLinstance>();
 						ai.add(vi);
 						instances.put(inst.node, ai);
+					}
+					for (Mparameter mp: inst.paramap.values()) {
+						vi.map(mp.getSymbol().getName(), new VHDLvalue(mp.getValue()));
 					}
 				}
 			}
@@ -536,7 +551,11 @@ public class Bloxnode extends Bloxelement implements Visitable {
 							} else {
 								a.add(new VHDLassign(vport, bs));
 							}
+						} else {
+							throw new BloxException("*Bloxnode::vhdlConnectBusPort* not expecting " + vp.getClass().getName());
 						}
+					} else {
+						System.err.println("*Bloxnode::vhdlConnectBusPort* symbol not found in " + name + ": " + ep.port.name + (bp!=null?("_" + bp.name):"") + suffix);
 					}
 
 				} else {
@@ -612,7 +631,7 @@ public class Bloxnode extends Bloxelement implements Visitable {
 		try {
 			for (Bloxconn c: connections) {
 				// make the connection
-				c.connect(this);
+				c.connect(this, false);
 			}
 		} catch(BloxException ex) {
 			ex.printStackTrace();

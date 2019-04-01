@@ -4,6 +4,8 @@ import java.util.*;
 
 import org.json.*;
 
+import be.wmeeus.symmath.expression.*;
+import be.wmeeus.symmath.util.Mexception;
 import be.wmeeus.util.PP;
 
 public class Bloxinst extends Bloxelement {
@@ -24,7 +26,8 @@ public class Bloxinst extends Bloxelement {
 		ports.add(new Bloxport(p, p.name /* TODO needs to be unique */, this));
 	}
 	
-	// TODO parameters?
+	Hashtable<String, Mparameter> paramap = new Hashtable<String, Mparameter>(); 
+	
 	Hashtable<Bloxport, Bloxconn> portmap = new Hashtable<Bloxport, Bloxconn>();
 	
 	public Bloxinst(String s, Bloxnode n) throws BloxException {
@@ -60,6 +63,16 @@ public class Bloxinst extends Bloxelement {
 				repeat = o.getInt("repeat");
 			}
 		} catch (JSONException ex) {
+			ex.printStackTrace();
+			throw new BloxException(ex.toString());
+		}
+	}
+	
+	public void map(String pname, int pval) throws BloxException {
+		try {
+			Mparameter p = new Mparameter(pname, pval);
+			paramap.put(pname, p);
+		} catch(Mexception ex) {
 			ex.printStackTrace();
 			throw new BloxException(ex.toString());
 		}

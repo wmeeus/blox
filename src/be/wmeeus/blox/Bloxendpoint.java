@@ -17,6 +17,13 @@ public class Bloxendpoint {
 		port = p;
 	}
 
+	/**
+	 * Copy/add constructor: copy an endpoint and optionally add an entry to the path + indices
+	 *  
+	 * @param ep   the endpoint to copy
+	 * @param n    the instance to add to the path
+	 * @param ind  the index to go with the additional instance
+	 */
 	public Bloxendpoint(Bloxendpoint ep, Bloxinst n, Mnode ind) {
 		port = ep.port;
 		portindex = ep.portindex;
@@ -146,7 +153,7 @@ public class Bloxendpoint {
 			} else {
 				idx = "";
 			}
-			r = n.name + "(" + n.node.name + ")" + idx + "/" + r;
+			r = n.name + "#" + n.repeat + "(" + n.node.name + ")" + idx + "/" + r;
 		}
 		//		if (indices != null) {
 		//			r += "[";
@@ -234,11 +241,18 @@ public class Bloxendpoint {
 		return null;
 	}
 
-//	/**
-//	 * Calculates the "fanout" of this endpoint i.e. the number of instances of this endpoint.
-//	 * @return the "fanout" of this endpoint
-//	 */
-//	public int fanout(Mparameter p) throws BloxException {
+	/**
+	 * Calculates the "fanout" of this endpoint i.e. the number of instances of this endpoint.
+	 * @return the "fanout" of this endpoint
+	 */
+	public int fanout(Mparameter p) throws BloxException {
+		int repeat = ipath.get(0).repeat;
+		if (repeat == 1 || getIndex(0) == null) {
+			return repeat;
+		}
+		
+		// TODO where do unexpected indices come from?
+		
 //		if (indices == null || indices.get(0) == null) {
 //			return 1;
 //		}
@@ -250,5 +264,7 @@ public class Bloxendpoint {
 //			ex.printStackTrace();
 //		}
 //		return f;
-//	}
+		System.err.println("*fanout* use case not supported: " + toString());
+		return 1;
+	}
 }

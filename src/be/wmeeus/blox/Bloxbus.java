@@ -10,7 +10,8 @@ public class Bloxbus {
 	ArrayList<Bloxbusport> ports = null;
 	public boolean symmetric = false;
 	boolean simple = false;
-
+	String vhdlpackage = null;
+	
 	public boolean isSimple() {
 		return simple;
 	}
@@ -76,6 +77,9 @@ public class Bloxbus {
 					if (!o.has("port")) {
 						throw new BloxException("Port definition missing in bus " + name);
 					}
+					if (o.has("vhdl_package")) {
+						vhdlpackage = o.getString("vhdl_package");
+					}
 					JSONArray pa = o.getJSONArray("port");
 					for (Object oo: pa) {
 						if (!(oo instanceof JSONObject)) {
@@ -96,7 +100,15 @@ public class Bloxbus {
 	}
 
 	public String toString() {
-		return "bus " + name;
+		String r = "bus " + name + "(";
+		boolean first = true;
+		for (Bloxbusport p: ports) {
+			if (!first) r += ",";
+			r += p.toString();
+			first = false;
+		}
+		
+		return r + ")";
 	}
 	
 	static Hashtable<String, Bloxnode> connectors = null;
@@ -127,21 +139,26 @@ public class Bloxbus {
 		
 		n = new Bloxnode(nm);
 		connectors.put(nm,  n);
-		// TODO clocks & resets
-		// TODO cdc
+		// TODO clocks & resets - OPTIONAL!
+		// TODO cdc - if clocked, obviously
 		if (slaves != null) {
 			for (Bloxbus s: slaves) {
 				n.addPort(new Bloxport("s_" + s.name, "slave", s, n));
 			} 
-			n.addPort(new Bloxport("m_" + master.name, "master", master, n));
+			Bloxport mport = new Bloxport("m_" + master.name, "master", master, n);
+			mport.setArrayport(true);
+			n.addPort(mport);
 		} else {
 			n.addPort(new Bloxport("s_" + master.name, "slave", master, n));
-			// TODO array!!
 			n.addPort(new Bloxport("m_" + master.name, "master", master, n));
 		}
 		System.out.println("*new Bloxbus connector* " + nm);
 		System.out.println(n.vhdl());
 		// TODO VHDL to file
 		return n;
+	}
+	
+	public String getVHDLpackage() {
+		return vhdlpackage;
 	}
 }

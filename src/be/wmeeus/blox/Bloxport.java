@@ -3,15 +3,42 @@ package be.wmeeus.blox;
 import org.json.*;
 
 public class Bloxport extends Bloxelement {
+	/**
+	 * Determines the direction of a port, either in/slave or out/master
+	 */
 	String direction = null;
+	
+	/**
+	 * Port type.
+	 */
 	Bloxbus type = null;
 	
+	/**
+	 * Determines whether this port is an array of the port type. The type definition
+	 * contains what needs to happen with individual signals in case of an array port. 
+	 */
+	boolean arrayport = false;
+	
+	/**
+	 * Constructor
+	 * 
+	 * @param p Port from which the direction will be taken
+	 * @param n Port name
+	 * @param e Parent element
+	 */
 	public Bloxport(Bloxport p, String n, Bloxelement e) {
 		name = n;
 		direction = p.direction;
 		parent = e;
 	}
-	
+
+	/**
+	 * Constructor
+	 * 
+	 * @param s Port name
+	 * @param n Parent element
+	 * @param t Port type
+	 */
 	public Bloxport(String s, Bloxnode n, Bloxbus t) {
 		name = s;
 		parent = n;
@@ -19,6 +46,14 @@ public class Bloxport extends Bloxelement {
 		type = t;
 	}
 
+	/**
+	 * Constructor
+	 * 
+	 * @param s Port name
+	 * @param d Port direction
+	 * @param t Port type
+	 * @param n Parent element
+	 */
 	public Bloxport(String s, String d, Bloxbus t, Bloxnode n) {
 		name = s;
 		parent = n;
@@ -26,6 +61,13 @@ public class Bloxport extends Bloxelement {
 		type = t;
 	}
 
+	/**
+	 * Constructor, parses a port from a JSON input
+	 * 
+	 * @param o The JSON object with port information
+	 * @param n The parent element
+	 * @throws BloxException
+	 */
 	public Bloxport(JSONObject o, Bloxnode n) throws BloxException {
 		super(o);
 		parent = n;
@@ -73,6 +115,10 @@ public class Bloxport extends Bloxelement {
 		visitor.visit(this);
 	}
 
+	/**
+	 * Determines whether this port is a master / output
+	 * @return true if this port is a master, false otherwise
+	 */
 	public boolean isMaster() {
 		if (direction == null) {
 			System.err.println("*ERROR* direction not filled in at port " + toString() + " of " + parent);
@@ -80,5 +126,22 @@ public class Bloxport extends Bloxelement {
 		}
 		if (direction.equals("master") || direction.endsWith("out")) return true;
 		return false;
+	}
+
+	/**
+	 * Sets whether this port is an array port or not
+	 * @param b true sets this port to be an array port, false sets a non-array port
+	 */
+	public void setArrayport(boolean b) {
+		arrayport = b;
+	}
+	
+	/**
+	 * Determines whether this port is an array port
+	 * 
+	 * @return true if this port is an array port, or false otherwise.
+	 */
+	public boolean isArrayport() {
+		return arrayport;
 	}
 }

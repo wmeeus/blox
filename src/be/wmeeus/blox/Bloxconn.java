@@ -168,7 +168,7 @@ public class Bloxconn {
 
 	public Bloxendpoint connectUp(Bloxnode parent) throws BloxException {
 		System.out.println(" connectUp start: " + this + " parent=" + parent);
-		connect(parent);
+		Bloxconn lconn = connect(parent, true);
 		Bloxendpoint ep = getPort();
 		if (ep == null) {
 			Bloxport p = new Bloxport(name, parent, getType());
@@ -177,6 +177,12 @@ public class Bloxconn {
 			} else {
 				p.direction = "slave";
 			}
+			parent.addPort(p);
+			ep = new Bloxendpoint(p);
+			endpoints.add(ep);
+			lconn.endpoints.add(ep);
+			//ep.portindex = endpoints.get(0).getLastIndex();
+			// some wild attempt...
 			Mnode epx = endpoints.get(0).anyIndex();
 			if (parameter != null && epx != null) {
 				// evaluate the parameter, calculate the range...
@@ -188,13 +194,8 @@ public class Bloxconn {
 					ex.printStackTrace();
 					throw new BloxException(ex.toString());
 				}
-				p.repeat = d.size();
+				ep.port.repeat = d.size();
 			}
-			parent.addPort(p);
-			ep = new Bloxendpoint(p);
-			endpoints.add(ep);
-			//ep.portindex = endpoints.get(0).getLastIndex();
-			// some wild attempt...
 			ep.portindex = epx;
 			System.out.println(" connectUp new endpoint: " + ep);
 		} else {
@@ -204,14 +205,15 @@ public class Bloxconn {
 		return ep;
 	}
 
-	public void connect(Bloxnode parent) throws BloxException {
+	public Bloxconn connect(Bloxnode parent, boolean recursing) throws BloxException {
 		if (isLocal()) {
 			//			System.out.println("  Local connection found: " + this);
 			parent.addLocalConnection(this);
-			return;
+			return this;
 		}
 
-		Bloxnode bn = getBase(parent);
+		Bloxnode bn = parent;
+		if (!recursing) bn = getBase(parent);
 		System.out.println("*Bloxconn::connect* connection " + toString() + " in parent " + parent.name + " base " + bn.name);
 		if (bn != parent) {
 			System.err.println(toString());
@@ -242,6 +244,7 @@ public class Bloxconn {
 			Bloxnode nnode = ep.get(0);
 			Bloxendpoint endstrip = ep.strip(1);
 
+			// conaddm  
 			Hashtable<Mnode, Bloxconn> conaddm = subconns.get(nnode);
 			if (conaddm == null) {
 				conaddm = new Hashtable<Mnode, Bloxconn>();
@@ -250,7 +253,7 @@ public class Bloxconn {
 			//			System.err.println("Bloxconn::connect* endpoint " + ep);
 			Bloxconn conadd = null;
 			if (parameter == null) {
-				conadd = conaddm.get(Mvalue.ZERO);
+				conadd = conaddm.get(Mvalue.NONE);
 			} else {
 				conadd = conaddm.get(ep.getIndex(0));
 			}
@@ -261,7 +264,7 @@ public class Bloxconn {
 				newconn.parameter = parameter;
 				newconn.add(endstrip);
 				if (parameter == null) {
-					conaddm.put(Mvalue.ZERO, newconn);
+					conaddm.put(Mvalue.NONE, newconn);
 				} else {
 					conaddm.put(ep.getIndex(0), newconn);
 				}
@@ -281,12 +284,14 @@ public class Bloxconn {
 				for (Mnode ix: cm.keySet()) {
 					Bloxconn c = cm.get(ix);
 					c.type = type;
-					Bloxport p = new Bloxport(name, en, type);
-					p.direction = c.hasMaster()?"master":"slave";
-					en.addPort(p);
-					c.add(new Bloxendpoint(p));
-
-					localconn.add(new Bloxendpoint(c.connectUp(en), parent.getInstanceOf(en), ix)); // TODO index
+//					Bloxport p = new Bloxport(name, en, type);
+//					p.direction = c.hasMaster()?"master":"slave";
+//					en.addPort(p);
+//					c.add(new Bloxendpoint(p));
+					// TODO fix index!
+					Mnode iix = (ix!=Mvalue.NONE)?ix:null;
+					// c.connectUp() should return a port-only endpoint
+					localconn.add(new Bloxendpoint(c.connectUp(en), parent.getInstanceOf(en), iix));
 				}
 			}
 		}
@@ -295,13 +300,14 @@ public class Bloxconn {
 		//		System.out.println(" original : " + toString());
 		//		System.out.println(" localized: " + localconn.toString());
 
-		if (localconn.fanout() > 2 && type != null && !type.isSimple()) {
+		if (localconn.fanout() > 1 && type != null && !type.isSimple()) {
 			System.err.println("*Bloxconn::connect* complex local connection needs interface, type " + type);
-			System.out.println(" localized: " + localconn.toString());
+			System.out.println(" pre  localized: " + localconn.toString());
 			localconn.type = type;
 			localconn.insertInterface(parent);
+			System.out.println(" post localized: " + localconn.toString());
 		}
-
+		return localconn;
 	}
 
 	private void insertInterface(Bloxnode parent) throws BloxException {
@@ -314,6 +320,9 @@ public class Bloxconn {
 		Bloxinst ifinst = parent.addInstance(new Bloxinst("inst_" + busif.getName(), busif));
 
 		ArrayList<Bloxendpoint> masterend = new ArrayList<Bloxendpoint>();
+		Bloxendpoint epslv = new Bloxendpoint(ifinst, null);
+		epslv.setPort(busif.getPort("s_" + type.name));
+		masterend.add(epslv);
 		// add slave port of the interface
 
 		int fanout = 0;
@@ -321,20 +330,20 @@ public class Bloxconn {
 			if (ep.isMaster()) {
 				// keep master port in this local connection, together with the slave port of the interface
 				masterend.add(ep);
-				Bloxendpoint epslv = new Bloxendpoint(ifinst, null);
-				epslv.setPort(busif.getPort("m_" + type.name));
-				masterend.add(epslv);
 			} else {
 				// make a new local connection which connects this endpoint to the master port of the interface
 				Bloxconn fanconn = new Bloxconn("f_" + type.name + "_" + fanout);
 				fanconn.add(ep);
+				fanconn.type = type;
 				Bloxendpoint epmtr = new Bloxendpoint(ifinst, null);
-				epmtr.setPort(busif.getPort("s_" + type.name));
+				epmtr.setPort(busif.getPort("m_" + type.name));
 				fanconn.add(epmtr);
 				parent.addLocalConnection(fanconn);
-				fanout++;
+				fanout += ep.fanout(null); // TODO add repeat count to fanout!
 			}
+			System.err.println("*Bloxconn::insertInterface* ep " + ep + " S(fanout)=" + fanout);
 		}
+		ifinst.map("m_" + type.name + "_fanout", fanout);
 		endpoints = masterend;
 
 	}
@@ -346,11 +355,16 @@ public class Bloxconn {
 	 * @return the local fanout of this connection
 	 * @throws BloxException 
 	 */
-	public int fanout() throws BloxException {
+	public int fanout() {
 		int f = 0;
 		for (Bloxendpoint ep: endpoints) {
-//			f += ep.fanout(parameter);
-			f += 1; // TODO incomplete
+			if (ep.isMaster()) continue; // is fanin!
+			Bloxinst epi = ep.getLastInst();
+			if (epi != null && parameter == null) {
+				f += epi.repeat;
+			} else {
+				f += 1;
+			}
 		}
 		return f;
 	}
