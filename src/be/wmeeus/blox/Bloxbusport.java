@@ -11,6 +11,7 @@ public class Bloxbusport {
 	Bloxbus parent = null;
 	String type = null; // null type means vector or wire
 	boolean fanout_array = false;
+	boolean fanout_wire = false;
 
 	public Bloxbusport(String n, String m, int w, Bloxbus p) {
 		name = n;
@@ -42,6 +43,7 @@ public class Bloxbusport {
 			}
 			if (o.has("fanout")) {
 				fanout_array = (o.getString("fanout").equals("vector"));
+				fanout_wire  = (o.getString("fanout").equals("wire"));
 			}
 		} catch (JSONException ex) {
 			ex.printStackTrace();

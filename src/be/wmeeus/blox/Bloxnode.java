@@ -159,7 +159,7 @@ public class Bloxnode extends Bloxelement implements Visitable {
 		children.add(i);
 		return i;
 	}
-	
+
 	/**
 	 * Get the first instance of a particular node.
 	 * @param b the node
@@ -172,7 +172,7 @@ public class Bloxnode extends Bloxelement implements Visitable {
 		}
 		return null;
 	}
-	
+
 	public Bloxinst getChild(String n) {
 		if (children ==  null || children.isEmpty()) return null;
 		for (Bloxinst i: children) {
@@ -379,14 +379,14 @@ public class Bloxnode extends Bloxelement implements Visitable {
 					System.err.println("NULL direction in port " + p.name + " of " + toString());
 					p.direction = "master";
 				}
-				
+
 				boolean isslave = !p.isMaster();
 				VHDLgeneric pg = null;
 				if (p.isArrayport()) {
 					pg = new VHDLgeneric(p.name + "_fanout", "natural", "1");
 					e.add(pg);
 				}
-				
+
 				// TODO repeat vs. array
 				for (int i = 0; i < p.repeat; i++) {
 					String suffix = "";
@@ -460,11 +460,11 @@ public class Bloxnode extends Bloxelement implements Visitable {
 				}
 
 				if (conn.haswire) {
-//					System.out.println("local connections in " + name + " connection " + conn.name
-//							+ " type " + conn.getType());
+					//					System.out.println("local connections in " + name + " connection " + conn.name
+					//							+ " type " + conn.getType());
 					if (conn.getType().equals(Bloxbus.WIRE)) {
 						int j = 0;
-//						System.out.println("WIRE map");
+						//						System.out.println("WIRE map");
 						if (pdom == null) {
 							vhdlConnectBusport(a, instances, conn, paramized, null, -1, -1, null);
 						} else for (Integer i: pdom) {
@@ -507,32 +507,76 @@ public class Bloxnode extends Bloxelement implements Visitable {
 
 		// seq is sequence number (in domain values list) = always 0, 1, ...
 		// parseq is parameter value in current iteration
-		if (seq > -1) suffix = "_" + seq;
+		if (seq > -1) {
+			suffix = "_" + seq;
+		}
 
 		VHDLsignal bs = null;
 		if (bp != null) {
-			bs = new VHDLsignal("s_" + conn.name + "_" + bp.name + suffix, 
-					bp.getVHDLtype());
+			// TODO check whether to use an existing signal which may either be
+			// - a simple signal, if already mapped wire fanout
+			// - an indexed part of an array signal, if vector/array fanout  
+			if (bp.fanout_wire) {
+				for (Bloxendpoint ep: conn.endpoints) {
+					if (ep.isPort()) continue;
+					System.out.println("*Bloxnode::vhdlConnectBusport* checking " + ep.toString() + " of " + conn);
+					String portsuffix = "";
+					//					if (ep.portindex != null) {
+					//						portsuffix = "_" + ep.portindex.eval(paramvalues);
+					//						if (ep.getLastIndex() == null) {
+					//							iseq = 0; // wild assumption!
+					//						}
+					//					}
+					String portprefix = "";
+					// master or slave?
+					if (ep.isMaster()) {
+						portprefix += ep.getLast().masterprefix;
+					} else {
+						portprefix += ep.getLast().slaveprefix;
+					}
+					// in or out?
+					if (bp != null) {
+						if (bp.enslave(!ep.isMaster()).equals("in")) {
+							portprefix = ep.getLast().inputprefix + portprefix;
+						} else {
+							portprefix = ep.getLast().outputprefix + portprefix;
+						}
+					} else {
+						// TODO figure out what to do
+					}
+					String fullportname = null;
+					if (ep.port.name.isEmpty() && portprefix.endsWith("_")) {
+						fullportname = portprefix.substring(0, portprefix.length() - 1) + (bp!=null?("_" + bp.name):"") + portsuffix;
+					} else {
+						fullportname = portprefix + ep.port.name + (bp!=null?("_" + bp.name):"") + portsuffix;
+					}
+					ArrayList<VHDLinstance> insts = instances.get(ep.getLast());
+					if (insts.size() != 1) {
+						continue;
+					}
+					VHDLnode vn = insts.get(0).getmap(fullportname);
+					if (vn != null && (vn instanceof VHDLsignal)) {
+						System.out.println("*Bloxnode::vcbp* recycling signal " + vn);
+						bs = (VHDLsignal)vn;
+					}
+				}				
+			}
+
+			if (bs == null) {
+				bs = new VHDLsignal("s_" + conn.name + "_" + bp.name + suffix, 
+						bp.getVHDLtype());
+				a.add(bs);
+				System.out.println("*Bloxnode::vcbp* new signal: " + bs);
+			}
+
 		} else {
 			bs = new VHDLsignal("s_" + conn.name + suffix, 
 					VHDLstd_logic.STD_LOGIC); // TODO std_logic_vector support
+			a.add(bs);
 		}
-		a.add(bs);
 
 		try {
 			for (Bloxendpoint ep: conn.endpoints) {
-				//			if (paramized) {
-				//				Mnode indp = ep.getIndex(0);
-				//				System.out.println("** Endpoint for parameter: " + ep + " index " + indp);
-				//				if (indp != null) {
-				//					try {
-				//						System.out.println("   Parameter image: " + conn.getParameter().domain(indp));
-				//					} catch(Mexception ex) {
-				//						ex.printStackTrace();
-				//					}
-				//				}
-				//			}
-
 				Hashtable<Msymbol, Integer> paramvalues = null;
 				if (conn.parameter != null) {
 					paramvalues = new Hashtable<Msymbol, Integer>();
@@ -602,9 +646,9 @@ public class Bloxnode extends Bloxelement implements Visitable {
 					} else {
 						fullportname = portprefix + ep.port.name + (bp!=null?("_" + bp.name):"") + portsuffix;
 					}
-//					System.out.println("mapping: " + fullportname + 
-//							" endpoint " + ep + " seq=" + seq + " iseq=" + iseq);
-//					System.out.println(" ep.path(0) = " + ep.getLast());
+					//					System.out.println("mapping: " + fullportname + 
+					//							" endpoint " + ep + " seq=" + seq + " iseq=" + iseq);
+					//					System.out.println(" ep.path(0) = " + ep.getLast());
 
 					// does iseq refer to the instance or to the port? or both?
 					if (!paramized && insts.size() > 1) {
@@ -653,7 +697,7 @@ public class Bloxnode extends Bloxelement implements Visitable {
 					cn = cs.substring(0, ix);
 					cs = cs.substring(ix + 2);
 				}
-				
+
 				BloxGlobalConn gc = Bloxdesign.current.globalconns.get(cs);
 				if (gc == null) {
 					System.err.println("connectGlobals: node " + name + ": cannot find global connection " + cs);
