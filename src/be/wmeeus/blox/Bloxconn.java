@@ -17,7 +17,7 @@ public class Bloxconn {
 
 	Bloxnode connbase = null;
 	int connbaselevel = 0;
-	
+
 	int fanoutstart = -1;
 
 	public Bloxconn(String n) {
@@ -215,99 +215,101 @@ public class Bloxconn {
 	}
 
 	public Bloxconn connect(Bloxnode parent, boolean recursing) throws BloxException {
+		Bloxconn localconn = null;
 		if (isLocal()) {
 			//			System.out.println("  Local connection found: " + this);
 			parent.addLocalConnection(this);
-			return this;
-		}
+			localconn = this;
+		} else {
 
-		Bloxnode bn = parent;
-		if (!recursing) bn = getBase(parent);
-		System.out.println("*Bloxconn::connect* connection " + toString() + " in parent " + parent.name + " base " + bn.name);
-		if (bn != parent) {
-			System.err.println(toString());
-			throw new BloxException("Connection " + name + ": deeper base not supported yet, parent " + parent.name + ", base " + bn.name);
-		}
-
-		//		System.out.println("*connect* figuring out connection " + name + " in " + parent);
-
-		// subconns contains connections that need to be propagated to the next deeper level
-		Hashtable<Bloxnode, Hashtable<Mnode, Bloxconn> > subconns = 
-				new Hashtable<Bloxnode, Hashtable<Mnode, Bloxconn> >();
-		// localconn is the newly created local connection in the current node
-		// endpoints will be added below
-		Bloxconn localconn = new Bloxconn(name);
-		localconn.parameter = parameter;
-		parent.addLocalConnection(localconn);
-
-		// go through list of endpoints of the current connection
-		// add a localized version of each to the newly created localconn
-		for (Bloxendpoint ep: endpoints) {
-			// sort endpoints into categories: 1 "local" + 1 per submodule to connect to
-			if (ep.isLocal()) { // meaning: port of the current module of port of an instance
-				localconn.add(ep);
-				continue;
+			Bloxnode bn = parent;
+			if (!recursing) bn = getBase(parent);
+			System.out.println("*Bloxconn::connect* connection " + toString() + " in parent " + parent.name + " base " + bn.name);
+			if (bn != parent) {
+				System.err.println(toString());
+				throw new BloxException("Connection " + name + ": deeper base not supported yet, parent " + parent.name + ", base " + bn.name);
 			}
-			// at this point, ep is a port of a deeper-down instance
-			// add it to a list of deeper-down connections for said instance
-			Bloxnode nnode = ep.get(0);
-			Bloxendpoint endstrip = ep.strip(1);
 
-			// conaddm  
-			Hashtable<Mnode, Bloxconn> conaddm = subconns.get(nnode);
-			if (conaddm == null) {
-				conaddm = new Hashtable<Mnode, Bloxconn>();
-				subconns.put(nnode, conaddm);
-			}
-			//			System.err.println("Bloxconn::connect* endpoint " + ep);
-			Bloxconn conadd = null;
-			if (parameter == null) {
-				conadd = conaddm.get(Mvalue.NONE);
-			} else {
-				conadd = conaddm.get(ep.getIndex(0));
-			}
-			if (conadd != null) {
-				conadd.add(endstrip);
-			} else {
-				Bloxconn newconn = new Bloxconn(name);
-				newconn.parameter = parameter;
-				newconn.add(endstrip);
+			//		System.out.println("*connect* figuring out connection " + name + " in " + parent);
+
+			// subconns contains connections that need to be propagated to the next deeper level
+			Hashtable<Bloxnode, Hashtable<Mnode, Bloxconn> > subconns = 
+					new Hashtable<Bloxnode, Hashtable<Mnode, Bloxconn> >();
+			// localconn is the newly created local connection in the current node
+			// endpoints will be added below
+			localconn = new Bloxconn(name);
+			localconn.parameter = parameter;
+			parent.addLocalConnection(localconn);
+
+			// go through list of endpoints of the current connection
+			// add a localized version of each to the newly created localconn
+			for (Bloxendpoint ep: endpoints) {
+				// sort endpoints into categories: 1 "local" + 1 per submodule to connect to
+				if (ep.isLocal()) { // meaning: port of the current module of port of an instance
+					localconn.add(ep);
+					continue;
+				}
+				// at this point, ep is a port of a deeper-down instance
+				// add it to a list of deeper-down connections for said instance
+				Bloxnode nnode = ep.get(0);
+				Bloxendpoint endstrip = ep.strip(1);
+
+				// conaddm  
+				Hashtable<Mnode, Bloxconn> conaddm = subconns.get(nnode);
+				if (conaddm == null) {
+					conaddm = new Hashtable<Mnode, Bloxconn>();
+					subconns.put(nnode, conaddm);
+				}
+				//			System.err.println("Bloxconn::connect* endpoint " + ep);
+				Bloxconn conadd = null;
 				if (parameter == null) {
-					conaddm.put(Mvalue.NONE, newconn);
+					conadd = conaddm.get(Mvalue.NONE);
 				} else {
-					conaddm.put(ep.getIndex(0), newconn);
+					conadd = conaddm.get(ep.getIndex(0));
+				}
+				if (conadd != null) {
+					conadd.add(endstrip);
+				} else {
+					Bloxconn newconn = new Bloxconn(name);
+					newconn.parameter = parameter;
+					newconn.add(endstrip);
+					if (parameter == null) {
+						conaddm.put(Mvalue.NONE, newconn);
+					} else {
+						conaddm.put(ep.getIndex(0), newconn);
+					}
+				}
+				//			subconnind.put(endstrip, ep.getIndex(0));
+				// figure out whether the connection includes a port of parent
+				// figure out where the master port is (parent port, deeper-down port...) (later)
+				// figure out whether a local bus is needed
+			}
+
+			if (!subconns.isEmpty()) {
+				System.out.println("Deep connection " + name + " type " + type + " in " + parent);
+				System.out.println("Subconns: " + subconns);
+
+				for (Bloxnode en: subconns.keySet()) {
+					Hashtable<Mnode, Bloxconn> cm = subconns.get(en);
+					for (Mnode ix: cm.keySet()) {
+						Bloxconn c = cm.get(ix);
+						c.type = type;
+						//					Bloxport p = new Bloxport(name, en, type);
+						//					p.direction = c.hasMaster()?"master":"slave";
+						//					en.addPort(p);
+						//					c.add(new Bloxendpoint(p));
+						// TODO fix index!
+						Mnode iix = (ix!=Mvalue.NONE)?ix:null;
+						// c.connectUp() should return a port-only endpoint
+						localconn.add(new Bloxendpoint(c.connectUp(en), parent.getInstanceOf(en), iix));
+					}
 				}
 			}
-			//			subconnind.put(endstrip, ep.getIndex(0));
-			// figure out whether the connection includes a port of parent
-			// figure out where the master port is (parent port, deeper-down port...) (later)
-			// figure out whether a local bus is needed
+
+			localconn.parameter = this.parameter;
+			//		System.out.println(" original : " + toString());
+			System.out.println("*connect* localized: " + localconn.toString());
 		}
-
-		if (!subconns.isEmpty()) {
-			System.out.println("Deep connection " + name + " type " + type + " in " + parent);
-			System.out.println("Subconns: " + subconns);
-
-			for (Bloxnode en: subconns.keySet()) {
-				Hashtable<Mnode, Bloxconn> cm = subconns.get(en);
-				for (Mnode ix: cm.keySet()) {
-					Bloxconn c = cm.get(ix);
-					c.type = type;
-//					Bloxport p = new Bloxport(name, en, type);
-//					p.direction = c.hasMaster()?"master":"slave";
-//					en.addPort(p);
-//					c.add(new Bloxendpoint(p));
-					// TODO fix index!
-					Mnode iix = (ix!=Mvalue.NONE)?ix:null;
-					// c.connectUp() should return a port-only endpoint
-					localconn.add(new Bloxendpoint(c.connectUp(en), parent.getInstanceOf(en), iix));
-				}
-			}
-		}
-
-		localconn.parameter = this.parameter;
-		//		System.out.println(" original : " + toString());
-		//		System.out.println(" localized: " + localconn.toString());
 
 		if (localconn.fanout() > 1 && type != null && !type.isSimple()) {
 			System.err.println("*Bloxconn::connect* complex local connection needs interface, type " + type);
@@ -359,7 +361,7 @@ public class Bloxconn {
 		epmtr.fanout = fanout;
 		System.err.println("*Bloxconn::insertInterface* master endpoint " + epmtr);
 	}
-	
+
 	/**
 	 * Calculates the local fanout of a connection taking into account the (potentially multiple)
 	 * instances of each endpoint.

@@ -254,6 +254,8 @@ public class Bloxendpoint {
 	 * @return the "fanout" of this endpoint
 	 */
 	public int fanout(Mparameter p) throws BloxException {
+		if (ipath == null) return 1;
+		
 		int repeat = ipath.get(0).repeat;
 		if (repeat == 1 || getIndex(0) == null) {
 			return repeat;
