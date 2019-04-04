@@ -12,7 +12,12 @@ public class Bloxendpoint {
 //	private ArrayList<Bloxnode> path = null;
 	private ArrayList<Bloxinst> ipath = null;
 	private ArrayList<Mnode> indices = null;
-
+	
+	/**
+	 * Fanout of this endpoint
+	 */
+	int fanout = 1;
+	
 	public Bloxendpoint(Bloxport p) {
 		port = p;
 	}
@@ -142,6 +147,9 @@ public class Bloxendpoint {
 			//			}
 			if (portindex != null) {
 				r += "(" + portindex + ")";
+			}
+			if (fanout > 1) {
+				r += "(f=" + fanout + ")";
 			}
 		}
 		int i = 0;

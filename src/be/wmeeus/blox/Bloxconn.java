@@ -17,6 +17,8 @@ public class Bloxconn {
 
 	Bloxnode connbase = null;
 	int connbaselevel = 0;
+	
+	int fanoutstart = -1;
 
 	public Bloxconn(String n) {
 		name = n;
@@ -164,6 +166,13 @@ public class Bloxconn {
 			if (ep.isMaster()) return true;
 		}
 		return false;
+	}
+
+	public Bloxendpoint getMaster() {
+		for (Bloxendpoint ep: endpoints) {
+			if (ep.isMaster()) return ep;
+		}
+		return null;
 	}
 
 	public Bloxendpoint connectUp(Bloxnode parent) throws BloxException {
@@ -326,6 +335,9 @@ public class Bloxconn {
 		// add slave port of the interface
 
 		int fanout = 0;
+		Bloxport mport = busif.getPort("m_" + type.name);
+		Bloxendpoint epmtr = new Bloxendpoint(ifinst, null);
+		epmtr.setPort(mport);
 		for (Bloxendpoint ep: endpoints) {
 			if (ep.isMaster()) {
 				// keep master port in this local connection, together with the slave port of the interface
@@ -333,10 +345,9 @@ public class Bloxconn {
 			} else {
 				// make a new local connection which connects this endpoint to the master port of the interface
 				Bloxconn fanconn = new Bloxconn("f_" + type.name + "_" + fanout);
+				fanconn.fanoutstart = fanout;
 				fanconn.add(ep);
 				fanconn.type = type;
-				Bloxendpoint epmtr = new Bloxendpoint(ifinst, null);
-				epmtr.setPort(busif.getPort("m_" + type.name));
 				fanconn.add(epmtr);
 				parent.addLocalConnection(fanconn);
 				fanout += ep.fanout(null); // TODO add repeat count to fanout!
@@ -345,7 +356,8 @@ public class Bloxconn {
 		}
 		ifinst.map("m_" + type.name + "_fanout", fanout);
 		endpoints = masterend;
-
+		epmtr.fanout = fanout;
+		System.err.println("*Bloxconn::insertInterface* master endpoint " + epmtr);
 	}
 	
 	/**

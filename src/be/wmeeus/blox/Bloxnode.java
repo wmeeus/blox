@@ -504,22 +504,26 @@ public class Bloxnode extends Bloxelement implements Visitable {
 			ArrayList<Integer> ldom) throws VHDLexception, BloxException {
 
 		String suffix = "";
-
+		boolean bp_fanout_array = false;
+		
 		// seq is sequence number (in domain values list) = always 0, 1, ...
 		// parseq is parameter value in current iteration
 		if (seq > -1) {
 			suffix = "_" + seq;
 		}
 
+		boolean master_recycled = false;
+
 		VHDLsignal bs = null;
+		Bloxendpoint epm = conn.getMaster();
 		if (bp != null) {
+			bp_fanout_array = bp.fanout_array;
 			// TODO check whether to use an existing signal which may either be
 			// - a simple signal, if already mapped wire fanout
 			// - an indexed part of an array signal, if vector/array fanout  
-			if (bp.fanout_wire) {
-				for (Bloxendpoint ep: conn.endpoints) {
-					if (ep.isPort()) continue;
-					System.out.println("*Bloxnode::vhdlConnectBusport* checking " + ep.toString() + " of " + conn);
+			if (bp.fanout_wire || bp.fanout_array) {
+				if (epm != null && !epm.isPort()) {
+					System.out.println("*Bloxnode::vhdlConnectBusport* checking " + epm.toString() + " of " + conn);
 					String portsuffix = "";
 					//					if (ep.portindex != null) {
 					//						portsuffix = "_" + ep.portindex.eval(paramvalues);
@@ -527,44 +531,45 @@ public class Bloxnode extends Bloxelement implements Visitable {
 					//							iseq = 0; // wild assumption!
 					//						}
 					//					}
-					String portprefix = "";
-					// master or slave?
-					if (ep.isMaster()) {
-						portprefix += ep.getLast().masterprefix;
-					} else {
-						portprefix += ep.getLast().slaveprefix;
-					}
+					String portprefix = epm.getLast().masterprefix;
 					// in or out?
 					if (bp != null) {
-						if (bp.enslave(!ep.isMaster()).equals("in")) {
-							portprefix = ep.getLast().inputprefix + portprefix;
+						if (bp.enslave(!epm.isMaster()).equals("in")) {
+							portprefix = epm.getLast().inputprefix + portprefix;
 						} else {
-							portprefix = ep.getLast().outputprefix + portprefix;
+							portprefix = epm.getLast().outputprefix + portprefix;
 						}
-					} else {
-						// TODO figure out what to do
 					}
 					String fullportname = null;
-					if (ep.port.name.isEmpty() && portprefix.endsWith("_")) {
+					if (epm.port.name.isEmpty() && portprefix.endsWith("_")) {
 						fullportname = portprefix.substring(0, portprefix.length() - 1) + (bp!=null?("_" + bp.name):"") + portsuffix;
 					} else {
-						fullportname = portprefix + ep.port.name + (bp!=null?("_" + bp.name):"") + portsuffix;
+						fullportname = portprefix + epm.port.name + (bp!=null?("_" + bp.name):"") + portsuffix;
 					}
-					ArrayList<VHDLinstance> insts = instances.get(ep.getLast());
-					if (insts.size() != 1) {
-						continue;
-					}
-					VHDLnode vn = insts.get(0).getmap(fullportname);
-					if (vn != null && (vn instanceof VHDLsignal)) {
-						System.out.println("*Bloxnode::vcbp* recycling signal " + vn);
-						bs = (VHDLsignal)vn;
+					ArrayList<VHDLinstance> insts = instances.get(epm.getLast());
+					if (insts.size() == 1) {
+						VHDLnode vn = insts.get(0).getmap(fullportname);
+						if (vn != null && (vn instanceof VHDLsignal)) {
+							System.out.println("*Bloxnode::vcbp* recycling signal " + vn);
+							bs = (VHDLsignal)vn;
+							master_recycled = true;
+						}
+					} else {
+						// TODO handle situation
 					}
 				}				
 			}
 
 			if (bs == null) {
-				bs = new VHDLsignal("s_" + conn.name + "_" + bp.name + suffix, 
-						bp.getVHDLtype());
+				if (bp.fanout_array && epm != null && epm.port.isArrayport()) {
+					System.err.println("*vcbp* fanout port " + epm.port);
+					VHDLtype bt = bp.getVHDLtype();
+					VHDLtype at = new VHDLarray(bt.getName()+"_array", bt, 0, epm.fanout - 1);
+					bs = new VHDLsignal("s_" + conn.name + "_" + bp.name + suffix, at);
+				} else {
+					bs = new VHDLsignal("s_" + conn.name + "_" + bp.name + suffix, 
+							bp.getVHDLtype());
+				}
 				a.add(bs);
 				System.out.println("*Bloxnode::vcbp* new signal: " + bs);
 			}
@@ -575,96 +580,121 @@ public class Bloxnode extends Bloxelement implements Visitable {
 			a.add(bs);
 		}
 
+		System.err.println("*vcbp* connecting " + conn + " fanout start " + conn.fanoutstart);
+		
+		for (Bloxendpoint ep: conn.endpoints) {
+			// TODO slave of array fanout 
+			if (ep.isMaster() || !bp_fanout_array || !(bs.getType() instanceof VHDLarray)) { 
+				vhdlConnectSingleBusport(a, instances, conn, paramized, bp, parseq, seq, 
+						ldom, ep, bs, conn.fanoutstart, suffix);
+			} else {
+				vhdlConnectSingleBusport(a, instances, conn, paramized, bp, parseq, seq, 
+						ldom, ep, bs, conn.fanoutstart, suffix);
+			}
+		}
+	}
+
+	private VHDLsignal vhdlConnectSingleBusport(VHDLarchitecture a, Hashtable<Bloxnode, ArrayList<VHDLinstance>> instances,
+			Bloxconn conn, boolean paramized, Bloxbusport bp, int parseq, int seq, 
+			ArrayList<Integer> ldom, Bloxendpoint ep, VHDLnode bs, int fanoutstart, String suffix) throws VHDLexception, BloxException {
 		try {
-			for (Bloxendpoint ep: conn.endpoints) {
-				Hashtable<Msymbol, Integer> paramvalues = null;
-				if (conn.parameter != null) {
-					paramvalues = new Hashtable<Msymbol, Integer>();
-					// this should be the only parameter value that we're handling in this method call!
-					paramvalues.put(conn.parameter.getSymbol(), parseq);
-				}
+			Hashtable<Msymbol, Integer> paramvalues = null;
+			if (conn.parameter != null) {
+				paramvalues = new Hashtable<Msymbol, Integer>();
+				// this should be the only parameter value that we're handling in this method call!
+				paramvalues.put(conn.parameter.getSymbol(), parseq);
+			}
 
-				if (ep.isPort()) {
-					VHDLsymbol vp = e.get(ep.port.name + (bp!=null?("_" + bp.name):"") + suffix);
-					//					System.out.println("mapping port: " + ep.port.name + (bp!=null?("_" + bp.name):"") + suffix + " vhdl " + vp);
-					if (vp != null) {
-						if (vp instanceof VHDLport) {
-							VHDLport vport = (VHDLport)vp;
-							if (vport.isIn()) {
-								a.add(new VHDLassign(bs, vport));
-							} else {
-								a.add(new VHDLassign(vport, bs));
-							}
+			if (ep.isPort()) {
+				VHDLsymbol vp = e.get(ep.port.name + (bp!=null?("_" + bp.name):"") + suffix);
+				//					System.out.println("mapping port: " + ep.port.name + (bp!=null?("_" + bp.name):"") + suffix + " vhdl " + vp);
+				if (vp != null) {
+					if (vp instanceof VHDLport) {
+						VHDLport vport = (VHDLport)vp;
+						if (vport.isIn()) {
+							a.add(new VHDLassign(bs, vport));
 						} else {
-							throw new BloxException("*Bloxnode::vhdlConnectBusPort* not expecting " + vp.getClass().getName());
+							a.add(new VHDLassign(vport, bs));
 						}
 					} else {
-						System.err.println("*Bloxnode::vhdlConnectBusPort* symbol not found in " + name + ": " + ep.port.name + (bp!=null?("_" + bp.name):"") + suffix);
+						throw new BloxException("*Bloxnode::vhdlConnectBusPort* not expecting " + vp.getClass().getName());
 					}
-
 				} else {
-					int iseq = 0;
-					if (seq != -1) {
-						if (ep.getLastIndex() != null) {
-							iseq = ep.getLastIndex().eval(paramvalues).get();
-							// todo use next() ?
-						} else {
-							iseq = seq; // ??
-						}
-
-					}
-					ArrayList<VHDLinstance> insts = instances.get(ep.getLast());
-
-					String portsuffix = "";
-					if (ep.portindex != null) {
-						portsuffix = "_" + ep.portindex.eval(paramvalues);
-						if (ep.getLastIndex() == null) {
-							iseq = 0; // wild assumption!
-						}
-					}
-					String portprefix = "";
-					// master or slave?
-					if (ep.isMaster()) {
-						portprefix += ep.getLast().masterprefix;
-					} else {
-						portprefix += ep.getLast().slaveprefix;
-					}
-					// in or out?
-					if (bp != null) {
-						if (bp.enslave(!ep.isMaster()).equals("in")) {
-							portprefix = ep.getLast().inputprefix + portprefix;
-						} else {
-							portprefix = ep.getLast().outputprefix + portprefix;
-						}
-					} else {
-						// TODO figure out what to do
-					}
-
-					String fullportname = null;
-					if (ep.port.name.isEmpty() && portprefix.endsWith("_")) {
-						fullportname = portprefix.substring(0, portprefix.length() - 1) + (bp!=null?("_" + bp.name):"") + portsuffix;
-					} else {
-						fullportname = portprefix + ep.port.name + (bp!=null?("_" + bp.name):"") + portsuffix;
-					}
-					//					System.out.println("mapping: " + fullportname + 
-					//							" endpoint " + ep + " seq=" + seq + " iseq=" + iseq);
-					//					System.out.println(" ep.path(0) = " + ep.getLast());
-
-					// does iseq refer to the instance or to the port? or both?
-					if (!paramized && insts.size() > 1) {
-						for (VHDLinstance inst: insts) 
-							inst.map(fullportname, bs);
-					} else {
-						VHDLinstance inst = insts.get(iseq);
-						inst.map(fullportname, bs);
-					}
+					System.err.println("*Bloxnode::vhdlConnectBusPort* symbol not found in " + name + ": " + ep.port.name + (bp!=null?("_" + bp.name):"") + suffix);
 				}
 
+			} else {
+				int iseq = 0;
+				if (seq != -1) {
+					if (ep.getLastIndex() != null) {
+						iseq = ep.getLastIndex().eval(paramvalues).get();
+						// todo use next() ?
+					} else {
+						iseq = seq; // ??
+					}
+
+				}
+				ArrayList<VHDLinstance> insts = instances.get(ep.getLast());
+
+				String portsuffix = "";
+				if (ep.portindex != null) {
+					portsuffix = "_" + ep.portindex.eval(paramvalues);
+					if (ep.getLastIndex() == null) {
+						iseq = 0; // wild assumption!
+					}
+				}
+				String portprefix = "";
+				// master or slave?
+				if (ep.isMaster()) {
+					portprefix += ep.getLast().masterprefix;
+				} else {
+					portprefix += ep.getLast().slaveprefix;
+				}
+				// in or out?
+				if (bp != null) {
+					if (bp.enslave(!ep.isMaster()).equals("in")) {
+						portprefix = ep.getLast().inputprefix + portprefix;
+					} else {
+						portprefix = ep.getLast().outputprefix + portprefix;
+					}
+				} else {
+					// TODO figure out what to do
+				}
+
+				String fullportname = null;
+				if (ep.port.name.isEmpty() && portprefix.endsWith("_")) {
+					fullportname = portprefix.substring(0, portprefix.length() - 1) + (bp!=null?("_" + bp.name):"") + portsuffix;
+				} else {
+					fullportname = portprefix + ep.port.name + (bp!=null?("_" + bp.name):"") + portsuffix;
+				}
+				//					System.out.println("mapping: " + fullportname + 
+				//							" endpoint " + ep + " seq=" + seq + " iseq=" + iseq);
+				//					System.out.println(" ep.path(0) = " + ep.getLast());
+
+				// does iseq refer to the instance or to the port? or both?
+				int fanout = fanoutstart;
+				VHDLnode n = bs;
+				if (!paramized && insts.size() > 1) {
+					for (VHDLinstance inst: insts) {
+						if (fanoutstart > -1) {
+							n = new VHDLsubrange(bs, fanoutstart++);
+						}
+						inst.map(fullportname, n);
+					}
+				} else {
+					VHDLinstance inst = insts.get(iseq);
+					if (!ep.isMaster() && fanoutstart > -1) {
+						n = new VHDLsubrange(bs, fanoutstart);
+					}
+					inst.map(fullportname, n);
+				}
 			}
 		} catch(Mexception ex) {
 			ex.printStackTrace();
 			throw new BloxException(ex.toString());
 		}
+
+		return null;
 	}
 
 	public void connectNodes() {
