@@ -11,6 +11,7 @@ public class Bloxbus {
 	public boolean symmetric = false;
 	boolean simple = false;
 	String vhdlpackage = null;
+	String topology = null;
 	
 	public boolean isSimple() {
 		return simple;
@@ -90,6 +91,12 @@ public class Bloxbus {
 					}
 					if (o.has("symmetric")) {
 						symmetric = o.getBoolean("symmetric");
+					}
+					if (o.has("topology")) {
+						topology = o.getString("topology");
+						if (topology.equals("ptp") || topology.equals("pointopoint")) {
+							simple = true;
+						}
 					}
 				}
 			} catch (FileNotFoundException ex) {

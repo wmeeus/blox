@@ -227,7 +227,21 @@ public class Bloxendpoint {
 		return this;
 	}
 
+	// TODO find a better way to determine master/slave-ness
+	/**
+	 * Determines whether the port of this endpoint is a master port. 
+	 * Caveat: an endpoint only has a meaning in the context of a particular connection.
+	 * Whether a port is a driver or a sink of a connection depends on whether it is seen
+	 * from within or from outside its module/entity.  
+	 *   
+	 * @return true if the port of this endpoint is a master port, otherwise false
+	 */
 	public boolean isMaster() {
+//		if (port.type.symmetric) {
+//			if (isPort()) return false;
+//			return true;
+//		}
+		if (isPort()) return !port.isMaster();
 		return port.isMaster();
 	}
 

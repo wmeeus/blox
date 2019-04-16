@@ -81,7 +81,7 @@ public class Bloxconn {
 				//				Bloxport p = ep.port;
 				//				eps += p.parent.name + ":";
 				//				eps += p.name + " ";
-				eps += ep + " ";
+				eps += ep + (ep.isMaster()?"(m)":"(s)") + " ";
 			}
 		}
 		if (parameter != null) {
