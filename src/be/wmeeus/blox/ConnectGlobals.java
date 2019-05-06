@@ -7,7 +7,7 @@ public class ConnectGlobals implements Visitor {
 	}
 
 	public void visit(Bloxinst b) {
-		// Nothing to do
+		b.connectGlobals();
 	}
 
 	public void visit(Bloxport b) {

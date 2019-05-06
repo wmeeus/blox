@@ -18,7 +18,6 @@ public class Bloxnode extends Bloxelement implements Visitable {
 	ArrayList<Bloxconn> localconnections = null;
 	String type = null;
 	static ArrayList<Bloxnode> foreignnodes = null;
-	JSONObject json = null;
 
 	String masterprefix = "";
 	String slaveprefix  = "";
@@ -55,9 +54,37 @@ public class Bloxnode extends Bloxelement implements Visitable {
 		allnodes.put(s, this);
 	}
 
+	public static Bloxnode mkBloxnode(JSONObject o) throws BloxException {
+		if (!o.has("name")) {
+			throw new BloxException("Node without a name: " + o);
+		}
+		String name = o.getString("name");
+		Bloxnode n = null;
+		if (o.has("type")) {
+			String type = o.getString("type");
+			if (type.startsWith("file:")) {
+				String fn = type.substring(5);
+				n = Bloxdesign.read(fn);
+				// TODO add information from current json object to node
+				// do we expect a design to have a useful json node??
+				n.json = o;
+				System.out.println("*mkBloxnode* json object " + o);
+			}
+			if (type.equals("defined")) {
+				if (!allnodes.contains(name)) {
+					throw new BloxException("Undefined defined node: " + name);
+				}
+				n = allnodes.get(name);
+			}
+		}
+		if (n == null) {
+			n = new Bloxnode(o);
+		}
+		return n;
+	}
+	
 	public Bloxnode(JSONObject o) throws BloxException {
 		super(o);
-		json = o;
 		try {
 			allnodes.put(name, this);
 
@@ -299,7 +326,9 @@ public class Bloxnode extends Bloxelement implements Visitable {
 
 	public void accept(Visitor visitor) {
 		visitor.visit(this);
+//		System.out.println("*Bloxnode::accept* node " + name + " has " + children.size() + " instances");
 		for (Bloxinst b: children) {
+//			System.out.println("*Bloxnode::accept* instance " + b);
 			b.accept(visitor);
 		}
 		for (Bloxport p: ports) {
@@ -512,8 +541,6 @@ public class Bloxnode extends Bloxelement implements Visitable {
 			suffix = "_" + seq;
 		}
 
-		boolean master_recycled = false;
-
 		VHDLsignal bs = null;
 		Bloxendpoint epm = conn.getMaster();
 		if (bp != null) {
@@ -552,7 +579,6 @@ public class Bloxnode extends Bloxelement implements Visitable {
 						if (vn != null && (vn instanceof VHDLsignal)) {
 							System.out.println("*Bloxnode::vcbp* recycling signal " + vn);
 							bs = (VHDLsignal)vn;
-							master_recycled = true;
 						}
 					} else {
 						// TODO handle situation
@@ -594,6 +620,16 @@ public class Bloxnode extends Bloxelement implements Visitable {
 		}
 	}
 
+	private Bloxconn getConnection(String s) {
+		System.out.println("*Bloxnode::getConnection* node " + toString());
+		if (connections == null) return null;
+		for (Bloxconn c: connections) {
+			System.out.println("*Bloxnode::getConnection* " + c);
+			if (c.name.equals(s)) return c;
+		}
+		return null;
+	}
+	
 	private VHDLsignal vhdlConnectSingleBusport(VHDLarchitecture a, Hashtable<Bloxnode, ArrayList<VHDLinstance>> instances,
 			Bloxconn conn, boolean paramized, Bloxbusport bp, int parseq, int seq, 
 			ArrayList<Integer> ldom, Bloxendpoint ep, VHDLnode bs, int fanoutstart, String suffix) throws VHDLexception, BloxException {
@@ -645,17 +681,34 @@ public class Bloxnode extends Bloxelement implements Visitable {
 				}
 				String portprefix = "";
 				// master or slave?
-				if (ep.isMaster()) {
-					portprefix += ep.getLast().masterprefix;
+				Bloxnode cnode = ep.getLast();
+				boolean busclock = false, masterclock = false;
+				String portbase = ep.port.name;
+				if (portbase.endsWith("_clk")) {
+					int l = ep.port.name.length();
+					portbase = ep.port.name.substring(0, l-4);
+					System.out.println("potential bus clock: " + ep.port.name + " => " + portbase);
+					Bloxport clport = cnode.getPort(portbase);
+					if (clport != null) {
+						busclock = true;
+						System.out.println("node has bus: " + cnode);
+						masterclock = clport.isMaster();
+					} else {
+						System.out.println("node doesn't have bus: " + cnode);
+					}
+				}
+				
+				if ((!busclock && ep.isMaster()) || (busclock && masterclock)) {
+					portprefix += cnode.masterprefix;
 				} else {
-					portprefix += ep.getLast().slaveprefix;
+					portprefix += cnode.slaveprefix;
 				}
 				// in or out?
 				if (bp != null) {
 					if (bp.enslave(!ep.isMaster()).equals("in")) {
-						portprefix = ep.getLast().inputprefix + portprefix;
+						portprefix = cnode.inputprefix + portprefix;
 					} else {
-						portprefix = ep.getLast().outputprefix + portprefix;
+						portprefix = cnode.outputprefix + portprefix;
 					}
 				} else {
 					// TODO figure out what to do
@@ -663,16 +716,17 @@ public class Bloxnode extends Bloxelement implements Visitable {
 
 				String fullportname = null;
 				if (ep.port.name.isEmpty() && portprefix.endsWith("_")) {
+					System.out.println("fpn1: " + portprefix.substring(0, portprefix.length() - 1) + " + " + (bp!=null?("_" + bp.name):"") + " + " + portsuffix);
 					fullportname = portprefix.substring(0, portprefix.length() - 1) + (bp!=null?("_" + bp.name):"") + portsuffix;
 				} else {
-					fullportname = portprefix + ep.port.name + (bp!=null?("_" + bp.name):"") + portsuffix;
+					System.out.println("fpn2: " + portprefix + " + " + portbase + " + " + (bp!=null?("_" + bp.name):"") + " + " + portsuffix);
+					fullportname = portprefix + portbase + (bp!=null?("_" + bp.name):"") + portsuffix;
 				}
 				//					System.out.println("mapping: " + fullportname + 
 				//							" endpoint " + ep + " seq=" + seq + " iseq=" + iseq);
 				//					System.out.println(" ep.path(0) = " + ep.getLast());
 
 				// does iseq refer to the instance or to the port? or both?
-				int fanout = fanoutstart;
 				VHDLnode n = bs;
 				if (!paramized && insts.size() > 1) {
 					for (VHDLinstance inst: insts) {
@@ -712,41 +766,11 @@ public class Bloxnode extends Bloxelement implements Visitable {
 		}
 	}
 
+	/**
+	 * Make connections to global signals from this node
+	 */
 	public void connectGlobals() {
-		if (has("connectsTo")) {
-			JSONArray ca = (JSONArray)get("connectsTo");
-			for (Object co: ca) {
-				if (!(co instanceof String)) {
-					System.err.println("connectGlobals: not expecting " + co.getClass().getName());
-					System.exit(1);
-				}
-				String cs = (String) co;
-				String cn = cs;
-				if (cs.contains("<=")) {
-					int ix = cs.indexOf("<=");
-					cn = cs.substring(0, ix);
-					cs = cs.substring(ix + 2);
-				}
-
-				BloxGlobalConn gc = Bloxdesign.current.globalconns.get(cs);
-				if (gc == null) {
-					System.err.println("connectGlobals: node " + name + ": cannot find global connection " + cs);
-					System.err.println(Bloxdesign.current.globalconns);
-					System.exit(1);
-				}
-				Bloxport p = new Bloxport(cn, this, gc.type);
-				p.direction = "slave";
-				ports.add(p);
-				Bloxendpoint ep = Bloxdesign.current.findEndBlock(name).setPort(p);
-				System.out.println("*node::connectglobals* node " + name + " new endpoint " + ep);
-				try {
-					gc.add(ep);
-				} catch (BloxException ex) {
-					ex.printStackTrace();
-					System.exit(-1);
-				}
-			}
-		}
+		// functionality moved to instances
 	}
 
 	public void implementForeign() {
@@ -768,5 +792,15 @@ public class Bloxnode extends Bloxelement implements Visitable {
 
 	public JSONObject getJSON() {
 		return json;
+	}
+	
+	public void setDesign(Bloxdesign bloxdesign) {
+		if (!(this instanceof Bloxdesign)) {
+			design = bloxdesign;
+			for (Bloxinst inst: children) {
+				inst.design = bloxdesign;
+				inst.node.setDesign(bloxdesign);
+			}
+		}
 	}
 }

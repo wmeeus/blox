@@ -237,10 +237,6 @@ public class Bloxendpoint {
 	 * @return true if the port of this endpoint is a master port, otherwise false
 	 */
 	public boolean isMaster() {
-//		if (port.type.symmetric) {
-//			if (isPort()) return false;
-//			return true;
-//		}
 		if (isPort()) return !port.isMaster();
 		return port.isMaster();
 	}

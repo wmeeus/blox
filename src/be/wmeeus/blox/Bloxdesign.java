@@ -1,6 +1,7 @@
 package be.wmeeus.blox;
 
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.util.*;
 
 import org.json.*;
@@ -8,8 +9,6 @@ import org.json.*;
 import be.wmeeus.vhdl.*;
 
 public class Bloxdesign extends Bloxnode {
-	public static Bloxdesign current = null;
-
 	public Hashtable<String, BloxGlobalConn> globalconns = null;
 
 	public Bloxdesign(String n) throws BloxException {
@@ -18,7 +17,6 @@ public class Bloxdesign extends Bloxnode {
 
 	public Bloxdesign(JSONObject o) throws BloxException {
 		super(o);
-		current = this;
 		if (o.has("clocks")) {
 			JSONArray ca = o.getJSONArray("clocks");
 			for (Object co: ca) {
@@ -52,6 +50,11 @@ public class Bloxdesign extends Bloxnode {
 			}
 		} else {
 			System.out.println("design " + name + ": no globals");
+		}
+		design = this;
+		for (Bloxinst inst: children) {
+			inst.setDesign(this);
+			inst.node.setDesign(this);
 		}
 	}
 
@@ -107,18 +110,26 @@ public class Bloxdesign extends Bloxnode {
 
 	}
 
+	/**
+	 * Connect the source endpoint of all global signals in this design
+	 */
 	public void connectGlobals() {
-		// TODO connect source of global signals
+		// TODO in case of a subdesign, this might as well be a connection to the superdesign...
+		System.out.println("Running Bloxdesign::connectGlobals in node " + name);
 		for (BloxGlobalConn c: globalconns.values()) {
 			if (c.type == null) {
 				c.type = Bloxbus.WIRE; // TODO may not be right!!
 			}
+			System.out.println("*Bloxdesign::connectGlobals* " + c);
 			if (c.origin.startsWith(":")) {
 				String pn = c.origin.substring(1);
 
-				Bloxport p = new Bloxport(pn, this, c.type);
-				p.direction = "in";
-				addPort(p);
+				Bloxport p = getPort(pn);
+				if (p == null) {
+					p = new Bloxport(pn, this, c.type);
+					p.direction = "in";
+					addPort(p);
+				}
 				try {
 					c.add(new Bloxendpoint(p));
 				} catch(BloxException ex) {
@@ -155,6 +166,10 @@ public class Bloxdesign extends Bloxnode {
 					System.exit(-1);
 				}
 			}
+		}
+		if (json.has("connectsTo")) {
+			
+			super.connectGlobals();
 		}
 	}
 }

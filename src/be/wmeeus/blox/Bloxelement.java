@@ -7,7 +7,9 @@ import org.json.*;
 public class Bloxelement {
 	String name;
 	int repeat = 1;
-
+	JSONObject json = null;
+	Bloxdesign design = null;
+	
 	Hashtable<String, Object> references = null;
 	Bloxelement parent = null;
 
@@ -20,6 +22,7 @@ public class Bloxelement {
 			ex.printStackTrace();
 			throw new BloxException(ex.toString());
 		}
+		json = o;
 	}
 	
 	public void put(String s, Object o) {
@@ -74,5 +77,13 @@ public class Bloxelement {
 
 	public void setParent(Bloxelement parent) {
 		this.parent = parent;
+	}
+
+	public Bloxdesign getDesign() {
+		return design;
+	}
+
+	public void setDesign(Bloxdesign design) {
+		this.design = design;
 	}
 }

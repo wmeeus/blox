@@ -46,6 +46,7 @@ public class Bloxinst extends Bloxelement {
 	}
 	
 	public Bloxinst(JSONObject o) throws BloxException {
+		json = o;
 		try {
 			String n = o.getString("name");
 			if (o.has("instance")) {
@@ -57,7 +58,7 @@ public class Bloxinst extends Bloxelement {
 			if (bn!=null) {
 				node = bn;
 			} else {
-				node = new Bloxnode(o);
+				node = Bloxnode.mkBloxnode(o);
 			}
 			if (o.has("repeat")) {
 				repeat = o.getInt("repeat");
@@ -111,6 +112,8 @@ public class Bloxinst extends Bloxelement {
 	}
 
 	public Bloxendpoint findEndBlock(String nn) {
+		if (name.equals(nn)) return new Bloxendpoint(this, null); // also match instance name => ??
+		
 		if (node.name.equals(nn)) return new Bloxendpoint(this, null); // TODO index
 		Bloxendpoint ep = node.findEndBlock(nn);
 		if (ep == null) return null;
@@ -140,5 +143,62 @@ public class Bloxinst extends Bloxelement {
 			return ept;
 		}
 		return null;
+	}
+
+	/**
+	 * Make connections to global signals from this node
+	 */
+	public void connectGlobals() {
+		System.out.println("Running Bloxinst::connectGlobals in instance " + name);
+		System.out.println(" port: " + node.ports);
+		if (json == null) {
+			System.out.println("JSON null");
+			return;
+		}
+		System.out.println(json);
+		if (json.has("connectsTo")) {
+			System.out.println("Actually running Bloxinst::connectGlobals in instance " + name);
+			JSONArray ca = json.getJSONArray("connectsTo");
+			for (Object co: ca) {
+				if (!(co instanceof String)) {
+					System.err.println("connectGlobals: not expecting " + co.getClass().getName());
+					System.exit(1);
+				}
+				String cs = (String) co;
+				String cn = cs;
+				if (cs.contains("<=")) {
+					int ix = cs.indexOf("<=");
+					cn = cs.substring(0, ix);
+					cs = cs.substring(ix + 2);
+				}
+
+				BloxGlobalConn gc = design.globalconns.get(cs);
+				if (gc == null) {
+					System.err.println("connectGlobals: node " + name + ": cannot find global connection " + cs);
+					System.err.println(design.globalconns);
+					System.exit(1);
+				}
+				Bloxport p = node.getPort(cn);
+				if (p == null) {
+					System.out.println("*Bloxinst::connectGlobals* current port list: " + node.ports);
+					p = new Bloxport(cn, node, gc.type);
+					node.addPort(p);
+					p.direction = "slave";
+					System.out.println("*Bloxinst::connectGlobals* new port "+ p + " in node " + node);
+				}
+				System.out.println("*design* " + design);
+				System.out.println("*looking for end block* " + name + " => " + design.findEndBlock(name));
+				Bloxendpoint ep = design.findEndBlock(name).setPort(p);
+				System.out.println("*Bloxinst::connectGlobals* node " + name + " new endpoint " + ep);
+				try {
+					gc.add(ep);
+				} catch (BloxException ex) {
+					ex.printStackTrace();
+					System.exit(-1);
+				}
+			}
+		}
+		System.out.println("@end port: " + node.ports);
+
 	}
 }
