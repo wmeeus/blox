@@ -115,12 +115,10 @@ public class Bloxdesign extends Bloxnode {
 	 */
 	public void connectGlobals() {
 		// TODO in case of a subdesign, this might as well be a connection to the superdesign...
-		System.out.println("Running Bloxdesign::connectGlobals in node " + name);
 		for (BloxGlobalConn c: globalconns.values()) {
 			if (c.type == null) {
 				c.type = Bloxbus.WIRE; // TODO may not be right!!
 			}
-			System.out.println("*Bloxdesign::connectGlobals* " + c);
 			if (c.origin.startsWith(":")) {
 				String pn = c.origin.substring(1);
 

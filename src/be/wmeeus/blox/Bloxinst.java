@@ -34,7 +34,6 @@ public class Bloxinst extends Bloxelement {
 		s = s.trim();
 		if ((s==null || s.isEmpty()) && n==null) 
 			throw new BloxException("Null/empty name AND null node, whatare we doing here?");
-//		if (s==null || s.isEmpty()) throw new BloxException("Null or empty name for node " + n.name);
 		if (s==null || s.isEmpty()) {
 			System.out.println("*Warning* Null or empty name for node " + n.name);
 			s = "inst_" + n.name;
@@ -132,8 +131,6 @@ public class Bloxinst extends Bloxelement {
 			ln = ln.substring(0, sep);
 		}
 		
-//		System.out.println("*Bloxinst::endpoint* looking for " + ln + " index " + idx + " rem= " + dp);
- 
 		if (node.name.equals(ln)) {
 			Bloxendpoint ept = node.findEndpoint(dp);
 			if (ept == null) {
@@ -149,15 +146,10 @@ public class Bloxinst extends Bloxelement {
 	 * Make connections to global signals from this node
 	 */
 	public void connectGlobals() {
-		System.out.println("Running Bloxinst::connectGlobals in instance " + name);
-		System.out.println(" port: " + node.ports);
 		if (json == null) {
-			System.out.println("JSON null");
 			return;
 		}
-		System.out.println(json);
 		if (json.has("connectsTo")) {
-			System.out.println("Actually running Bloxinst::connectGlobals in instance " + name);
 			JSONArray ca = json.getJSONArray("connectsTo");
 			for (Object co: ca) {
 				if (!(co instanceof String)) {
@@ -180,16 +172,11 @@ public class Bloxinst extends Bloxelement {
 				}
 				Bloxport p = node.getPort(cn);
 				if (p == null) {
-					System.out.println("*Bloxinst::connectGlobals* current port list: " + node.ports);
 					p = new Bloxport(cn, node, gc.type);
 					node.addPort(p);
 					p.direction = "slave";
-					System.out.println("*Bloxinst::connectGlobals* new port "+ p + " in node " + node);
 				}
-				System.out.println("*design* " + design);
-				System.out.println("*looking for end block* " + name + " => " + design.findEndBlock(name));
 				Bloxendpoint ep = design.findEndBlock(name).setPort(p);
-				System.out.println("*Bloxinst::connectGlobals* node " + name + " new endpoint " + ep);
 				try {
 					gc.add(ep);
 				} catch (BloxException ex) {
@@ -198,7 +185,5 @@ public class Bloxinst extends Bloxelement {
 				}
 			}
 		}
-		System.out.println("@end port: " + node.ports);
-
 	}
 }

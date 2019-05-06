@@ -35,9 +35,7 @@ public class Bloxelement {
 			if (!o.equals(get(s))) {
 				throw new BloxException("Key not unique: " + s);
 			}
-//			System.out.println("*BLOX* key redefined: " + s);
 		}
-//		System.out.println("*BLOX* adding key " + s);
 		put(s, o);
 	}
 	
@@ -47,17 +45,14 @@ public class Bloxelement {
 			if (r instanceof ArrayList<?>) {
 				ArrayList<Object> ro = (ArrayList<Object>)r;
 				ro.add(o);
-//				System.out.println("*BLOX* ref: adding key to list: " + s);
 			} else {
 				ArrayList<Object> l = new ArrayList<Object>();
 				l.add(r);
 				l.add(o);
 				references.put(s, l);
-//				System.out.println("*BLOX* ref: making list and adding key: " + s);
 			}
 			return;
 		}
-//		System.out.println("*BLOX* ref: adding key: " + s);
 		put(s, o);
 	}
 	

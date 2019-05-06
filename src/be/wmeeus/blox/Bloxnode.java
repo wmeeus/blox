@@ -211,7 +211,6 @@ public class Bloxnode extends Bloxelement implements Visitable {
 	static int uniqueint = 0;
 
 	public Bloxnode addPath(String p, String n) throws BloxException {
-		//		System.out.println("*addPath* node " + name + " path " + p + " node to add " + n);
 		while (p.startsWith("/")) p = p.substring(1);
 		int sl = p.indexOf("/");
 		String pl = null;
@@ -220,7 +219,6 @@ public class Bloxnode extends Bloxelement implements Visitable {
 		} else {
 			pl = p;
 		}
-		//		System.out.println("*addPath* sl=> " + sl + " lpath " + pl);
 		Bloxinst bn = getChild(pl);
 		if (bn==null) {
 			// add an instance
@@ -241,7 +239,6 @@ public class Bloxnode extends Bloxelement implements Visitable {
 			Bloxinst bi = new Bloxinst(pl, bl);
 			bl.setParent(bi);
 			bi.setParent(this);
-			//			System.out.println("*adding instance " + bl.name + " (" + bi.node.name + " " + pl + ") to " + name + " bl= " + bl + " sl=" + sl);
 			children.add(bi);
 			if (sl!=-1) {
 				// adding multiple levels
@@ -326,9 +323,7 @@ public class Bloxnode extends Bloxelement implements Visitable {
 
 	public void accept(Visitor visitor) {
 		visitor.visit(this);
-//		System.out.println("*Bloxnode::accept* node " + name + " has " + children.size() + " instances");
 		for (Bloxinst b: children) {
-//			System.out.println("*Bloxnode::accept* instance " + b);
 			b.accept(visitor);
 		}
 		for (Bloxport p: ports) {
@@ -376,7 +371,6 @@ public class Bloxnode extends Bloxelement implements Visitable {
 			return ept;
 		}
 
-		//		System.out.println("*Bloxnode::endpoint* looking for " + pn);
 		for (Bloxinst bi: children) {
 			Bloxendpoint bn = bi.findEndpoint(pn);
 			if (bn!=null) return bn;
@@ -463,7 +457,6 @@ public class Bloxnode extends Bloxelement implements Visitable {
 				boolean paramized = false;
 				ArrayList<Integer> pdom = null;
 				if (conn.parameter != null) {
-					//					System.out.println("Parameterized local connection in node " + name + ": " + conn);
 					paramized = true;
 					for (Bloxendpoint ep: conn.endpoints) {
 						Mnode indp = ep.getIndex(0);
@@ -489,11 +482,8 @@ public class Bloxnode extends Bloxelement implements Visitable {
 				}
 
 				if (conn.haswire) {
-					//					System.out.println("local connections in " + name + " connection " + conn.name
-					//							+ " type " + conn.getType());
 					if (conn.getType().equals(Bloxbus.WIRE)) {
 						int j = 0;
-						//						System.out.println("WIRE map");
 						if (pdom == null) {
 							vhdlConnectBusport(a, instances, conn, paramized, null, -1, -1, null);
 						} else for (Integer i: pdom) {
@@ -501,7 +491,6 @@ public class Bloxnode extends Bloxelement implements Visitable {
 						}
 					} else {					
 						for (Bloxbusport bp: conn.getType().ports) {
-							System.out.println("BUS map port " + bp + " => " + conn.getType().ports.size());
 							int j = 0;
 							if (pdom == null) {
 								vhdlConnectBusport(a, instances, conn, paramized, bp, -1, -1, null);
@@ -550,7 +539,6 @@ public class Bloxnode extends Bloxelement implements Visitable {
 			// - an indexed part of an array signal, if vector/array fanout  
 			if (bp.fanout_wire || bp.fanout_array) {
 				if (epm != null && !epm.isPort()) {
-					System.out.println("*Bloxnode::vhdlConnectBusport* checking " + epm.toString() + " of " + conn);
 					String portsuffix = "";
 					//					if (ep.portindex != null) {
 					//						portsuffix = "_" + ep.portindex.eval(paramvalues);
@@ -577,7 +565,6 @@ public class Bloxnode extends Bloxelement implements Visitable {
 					if (insts.size() == 1) {
 						VHDLnode vn = insts.get(0).getmap(fullportname);
 						if (vn != null && (vn instanceof VHDLsignal)) {
-							System.out.println("*Bloxnode::vcbp* recycling signal " + vn);
 							bs = (VHDLsignal)vn;
 						}
 					} else {
@@ -588,7 +575,6 @@ public class Bloxnode extends Bloxelement implements Visitable {
 
 			if (bs == null) {
 				if (bp.fanout_array && epm != null && epm.port.isArrayport()) {
-					System.err.println("*vcbp* fanout port " + epm.port);
 					VHDLtype bt = bp.getVHDLtype();
 					VHDLtype at = new VHDLarray(bt.getName()+"_array", bt, 0, epm.fanout - 1);
 					bs = new VHDLsignal("s_" + conn.name + "_" + bp.name + suffix, at);
@@ -597,7 +583,6 @@ public class Bloxnode extends Bloxelement implements Visitable {
 							bp.getVHDLtype());
 				}
 				a.add(bs);
-				System.out.println("*Bloxnode::vcbp* new signal: " + bs);
 			}
 
 		} else {
@@ -606,8 +591,6 @@ public class Bloxnode extends Bloxelement implements Visitable {
 			a.add(bs);
 		}
 
-		System.err.println("*vcbp* connecting " + conn + " fanout start " + conn.fanoutstart);
-		
 		for (Bloxendpoint ep: conn.endpoints) {
 			// TODO slave of array fanout 
 			if (ep.isMaster() || !bp_fanout_array || !(bs.getType() instanceof VHDLarray)) { 
@@ -621,10 +604,8 @@ public class Bloxnode extends Bloxelement implements Visitable {
 	}
 
 	private Bloxconn getConnection(String s) {
-		System.out.println("*Bloxnode::getConnection* node " + toString());
 		if (connections == null) return null;
 		for (Bloxconn c: connections) {
-			System.out.println("*Bloxnode::getConnection* " + c);
 			if (c.name.equals(s)) return c;
 		}
 		return null;
@@ -643,7 +624,6 @@ public class Bloxnode extends Bloxelement implements Visitable {
 
 			if (ep.isPort()) {
 				VHDLsymbol vp = e.get(ep.port.name + (bp!=null?("_" + bp.name):"") + suffix);
-				//					System.out.println("mapping port: " + ep.port.name + (bp!=null?("_" + bp.name):"") + suffix + " vhdl " + vp);
 				if (vp != null) {
 					if (vp instanceof VHDLport) {
 						VHDLport vport = (VHDLport)vp;
@@ -687,14 +667,10 @@ public class Bloxnode extends Bloxelement implements Visitable {
 				if (portbase.endsWith("_clk")) {
 					int l = ep.port.name.length();
 					portbase = ep.port.name.substring(0, l-4);
-					System.out.println("potential bus clock: " + ep.port.name + " => " + portbase);
 					Bloxport clport = cnode.getPort(portbase);
 					if (clport != null) {
 						busclock = true;
-						System.out.println("node has bus: " + cnode);
 						masterclock = clport.isMaster();
-					} else {
-						System.out.println("node doesn't have bus: " + cnode);
 					}
 				}
 				
@@ -716,15 +692,10 @@ public class Bloxnode extends Bloxelement implements Visitable {
 
 				String fullportname = null;
 				if (ep.port.name.isEmpty() && portprefix.endsWith("_")) {
-					System.out.println("fpn1: " + portprefix.substring(0, portprefix.length() - 1) + " + " + (bp!=null?("_" + bp.name):"") + " + " + portsuffix);
 					fullportname = portprefix.substring(0, portprefix.length() - 1) + (bp!=null?("_" + bp.name):"") + portsuffix;
 				} else {
-					System.out.println("fpn2: " + portprefix + " + " + portbase + " + " + (bp!=null?("_" + bp.name):"") + " + " + portsuffix);
 					fullportname = portprefix + portbase + (bp!=null?("_" + bp.name):"") + portsuffix;
 				}
-				//					System.out.println("mapping: " + fullportname + 
-				//							" endpoint " + ep + " seq=" + seq + " iseq=" + iseq);
-				//					System.out.println(" ep.path(0) = " + ep.getLast());
 
 				// does iseq refer to the instance or to the port? or both?
 				VHDLnode n = bs;
@@ -755,7 +726,6 @@ public class Bloxnode extends Bloxelement implements Visitable {
 		if (connections == null || connections.isEmpty()) {
 			return;
 		}
-		//		System.out.println("Connecting nodes in " + name + ": " + connections.size() + " connection(s)");
 		try {
 			for (Bloxconn c: connections) {
 				// make the connection

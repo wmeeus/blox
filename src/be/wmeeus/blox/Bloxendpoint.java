@@ -189,7 +189,6 @@ public class Bloxendpoint {
 	}
 
 	public Bloxendpoint strip(int levels) throws BloxException {
-		//		System.out.println("*strip* original = " + toString() + " path/idx len " + path.size() + " " + indices.size());
 		if (levels == 0) return this;
 		int pathsize = ipath.size();
 		if ((ipath == null) || (levels > pathsize)) {
@@ -197,16 +196,13 @@ public class Bloxendpoint {
 		}
 		Bloxendpoint result = new Bloxendpoint(port);
 		if (levels < pathsize) {
-//			result.path = new ArrayList<Bloxnode>();
 			result.ipath = new ArrayList<Bloxinst>();
 			result.indices = new ArrayList<Mnode>();
 			for (int i = 0; i < pathsize - levels; i++) {
-//				result.path.add(path.get(i));
 				result.ipath.add(ipath.get(i));
 				result.indices.add(indices.get(i));
 			}
 		}
-		//		System.out.println("*strip* result = " + result);
 		return result;
 	}
 

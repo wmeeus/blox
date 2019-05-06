@@ -68,7 +68,6 @@ public class Bloxbus {
 			ports = new ArrayList<Bloxbusport>();
 
 			try {
-				System.out.println("Reading bus " + name + " from file " + n + ".json");
 				JSONObject o = new JSONObject(new JSONTokener(new FileInputStream(n + ".json")));
 				if (!(n.equals(o.getString("name")))) {
 					System.out.println("*ERROR* bus name must match file name in " + n + ".json");
@@ -86,7 +85,6 @@ public class Bloxbus {
 						if (!(oo instanceof JSONObject)) {
 							throw new BloxException("Bus port definition must be an array of JSON objects");
 						}
-						System.out.println("*debug* " + oo);
 						ports.add(new Bloxbusport((JSONObject)oo, this));
 					}
 					if (o.has("symmetric")) {
@@ -122,7 +120,6 @@ public class Bloxbus {
 	public static Bloxnode getConnector(Bloxbus slave, Bloxbus master) throws BloxException {
 		ArrayList<Bloxbus> slvs = new ArrayList<Bloxbus>();
 		slvs.add(slave);
-		System.out.println("*Bloxbus::getConnector* master " + master + " slaves " + slvs);
 		return getConnector(slvs, master);
 	}
 	

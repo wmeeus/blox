@@ -28,7 +28,6 @@ public class Bloxconn {
 		name = o.getString("name");
 		if (o.has("parameter")) {
 			parameter = Bloxparameter.get(o.getJSONObject("parameter"));
-			//			System.out.println("Found parameter " + parameter);
 		}
 		if (o.has("type")) {
 			type = Bloxbus.get(o.getString("type"));
@@ -176,7 +175,6 @@ public class Bloxconn {
 	}
 
 	public Bloxendpoint connectUp(Bloxnode parent) throws BloxException {
-		System.out.println(" connectUp start: " + this + " parent=" + parent);
 		Bloxconn lconn = connect(parent, true);
 		Bloxendpoint ep = getPort();
 		if (ep == null) {
@@ -206,31 +204,23 @@ public class Bloxconn {
 				ep.port.repeat = d.size();
 			}
 			ep.portindex = epx;
-			System.out.println(" connectUp new endpoint: " + ep);
-		} else {
-			System.out.println(" connectUp port found: " + ep);
 		}
-		System.out.println(" connectUp end: " + this);
 		return ep;
 	}
 
 	public Bloxconn connect(Bloxnode parent, boolean recursing) throws BloxException {
 		Bloxconn localconn = null;
 		if (isLocal()) {
-			//			System.out.println("  Local connection found: " + this);
 			parent.addLocalConnection(this);
 			localconn = this;
 		} else {
 
 			Bloxnode bn = parent;
 			if (!recursing) bn = getBase(parent);
-			System.out.println("*Bloxconn::connect* connection " + toString() + " in parent " + parent.name + " base " + bn.name);
 			if (bn != parent) {
 				System.err.println(toString());
 				throw new BloxException("Connection " + name + ": deeper base not supported yet, parent " + parent.name + ", base " + bn.name);
 			}
-
-			//		System.out.println("*connect* figuring out connection " + name + " in " + parent);
 
 			// subconns contains connections that need to be propagated to the next deeper level
 			Hashtable<Bloxnode, Hashtable<Mnode, Bloxconn> > subconns = 
@@ -286,9 +276,6 @@ public class Bloxconn {
 			}
 
 			if (!subconns.isEmpty()) {
-				System.out.println("Deep connection " + name + " type " + type + " in " + parent);
-				System.out.println("Subconns: " + subconns);
-
 				for (Bloxnode en: subconns.keySet()) {
 					Hashtable<Mnode, Bloxconn> cm = subconns.get(en);
 					for (Mnode ix: cm.keySet()) {
@@ -307,16 +294,11 @@ public class Bloxconn {
 			}
 
 			localconn.parameter = this.parameter;
-			//		System.out.println(" original : " + toString());
-			System.out.println("*connect* localized: " + localconn.toString());
 		}
 
 		if (localconn.fanout() > 1 && type != null && !type.isSimple()) {
-			System.err.println("*Bloxconn::connect* complex local connection needs interface, type " + type);
-			System.out.println(" pre  localized: " + localconn.toString());
 			localconn.type = type;
 			localconn.insertInterface(parent);
-			System.out.println(" post localized: " + localconn.toString());
 		}
 		return localconn;
 	}
@@ -386,7 +368,6 @@ public class Bloxconn {
 	public Bloxbus getType() {
 		// TODO Auto-generated method stub
 		if (type == null && endpoints != null && !endpoints.isEmpty()) {
-			//			System.out.println("*debug* Bloxconn::getType : " + toString());
 			type = endpoints.get(0).port.type;
 		}
 
