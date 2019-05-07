@@ -336,12 +336,10 @@ public class Bloxconn {
 				parent.addLocalConnection(fanconn);
 				fanout += ep.fanout(null); // TODO add repeat count to fanout!
 			}
-			System.err.println("*Bloxconn::insertInterface* ep " + ep + " S(fanout)=" + fanout);
 		}
 		ifinst.map("m_" + type.name + "_fanout", fanout);
 		endpoints = masterend;
 		epmtr.fanout = fanout;
-		System.err.println("*Bloxconn::insertInterface* master endpoint " + epmtr);
 	}
 
 	/**

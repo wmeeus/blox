@@ -156,8 +156,8 @@ public class Bloxbus {
 			n.addPort(new Bloxport("s_" + master.name, "slave", master, n));
 			n.addPort(new Bloxport("m_" + master.name, "master", master, n));
 		}
-		System.out.println("*new Bloxbus connector* " + nm);
-		System.out.println(n.vhdl());
+//		System.out.println("*new Bloxbus connector* " + nm);
+//		System.out.println(n.vhdl());
 		// TODO VHDL to file
 		return n;
 	}

@@ -410,22 +410,27 @@ public class Bloxnode extends Bloxelement implements Visitable {
 					e.add(pg);
 				}
 
+				String pname = p.name;
+				if (pname.endsWith("_clk") && p.type != Bloxbus.WIRE) {
+					pname = pname.substring(0, pname.length() - 4);
+				}
+				
 				// TODO repeat vs. array
 				for (int i = 0; i < p.repeat; i++) {
 					String suffix = "";
 					if (p.repeat > 1) suffix = "_" + i;
 					if (p.type.equals(Bloxbus.WIRE)) {
 						if (!p.isArrayport()) {
-							e.add(new VHDLport(p.name, (isslave?"in":"out"), VHDLstd_logic.STD_LOGIC));
+							e.add(new VHDLport(pname, (isslave?"in":"out"), VHDLstd_logic.STD_LOGIC));
 						} else {
-							e.add(new VHDLport(p.name, (isslave?"in":"out"), new VHDLstd_logic_vector(pg)));
+							e.add(new VHDLport(pname, (isslave?"in":"out"), new VHDLstd_logic_vector(pg)));
 						}
 					} else {
 						for (Bloxbusport bp: p.type.ports) {
 							if (!p.isArrayport() || !bp.fanout_array) {
-								e.add(new VHDLport(p.name + "_" + bp.name + suffix, bp.enslave(isslave), bp.getVHDLtype()));
+								e.add(new VHDLport(pname + "_" + bp.name + suffix, bp.enslave(isslave), bp.getVHDLtype()));
 							} else {
-								e.add(new VHDLport(p.name + "_" + bp.name + suffix, bp.enslave(isslave), bp.getVHDLarrayType(pg)));
+								e.add(new VHDLport(pname + "_" + bp.name + suffix, bp.enslave(isslave), bp.getVHDLarrayType(pg)));
 							}
 						}
 					}
@@ -664,7 +669,7 @@ public class Bloxnode extends Bloxelement implements Visitable {
 				Bloxnode cnode = ep.getLast();
 				boolean busclock = false, masterclock = false;
 				String portbase = ep.port.name;
-				if (portbase.endsWith("_clk")) {
+				if (portbase.endsWith("_clk") && conn.type != Bloxbus.WIRE) {
 					int l = ep.port.name.length();
 					portbase = ep.port.name.substring(0, l-4);
 					Bloxport clport = cnode.getPort(portbase);
