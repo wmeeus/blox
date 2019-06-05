@@ -115,58 +115,52 @@ public class Bloxdesign extends Bloxnode {
 	 */
 	public void connectGlobals() {
 		// TODO in case of a subdesign, this might as well be a connection to the superdesign...
-		for (BloxGlobalConn c: globalconns.values()) {
-			if (c.type == null) {
-				c.type = Bloxbus.WIRE; // TODO may not be right!!
-			}
-			if (c.origin.startsWith(":")) {
-				String pn = c.origin.substring(1);
+		try {
+			for (BloxGlobalConn c: globalconns.values()) {
+				if (c.type == null) {
+					c.type = Bloxbus.WIRE; // TODO may not be right!!
+				}
+				if (c.origin.startsWith(":")) {
+					String pn = c.origin.substring(1);
 
-				Bloxport p = getPort(pn);
-				if (p == null) {
-					p = new Bloxport(pn, this, c.type);
-					p.direction = "in";
-					addPort(p);
-				}
-				try {
+					Bloxport p = getPort(pn);
+					if (p == null) {
+						p = new Bloxport(pn, null, c.type, this);
+						p.direction = "in";
+						addPort(p);
+					}
 					c.add(new Bloxendpoint(p));
-				} catch(BloxException ex) {
-					ex.printStackTrace();
-					System.exit(-1);
-				}
-			} else {
-				String nna = c.origin;
-				String pna = null;
-				if (nna.contains(":")) {
-					int col = nna.indexOf(":");
-					pna = nna.substring(col+1);
-					nna = nna.substring(0, col);
 				} else {
-					pna = c.name;
-				}
-				Bloxendpoint ep = findEndBlock(nna); // contains path but not port
-				if (ep == null) {
-					System.err.println("*ERROR* connectGlobals: cannot find origin of " + nna + "::" + pna);
-					System.exit(-1);
-				}
-				Bloxnode endnode = ep.get(0);
-				Bloxport p = endnode.getPort(pna);
-				if (p == null) {
-					p = new Bloxport(c.name, endnode, c.type);
-					p.direction = "master";
-					endnode.addPort(p);
-				}
-				ep.setPort(p);
-				try {
+					String nna = c.origin;
+					String pna = null;
+					if (nna.contains(":")) {
+						int col = nna.indexOf(":");
+						pna = nna.substring(col+1);
+						nna = nna.substring(0, col);
+					} else {
+						pna = c.name;
+					}
+					Bloxendpoint ep = findEndBlock(nna); // contains path but not port
+					if (ep == null) {
+						System.err.println("*ERROR* connectGlobals: cannot find origin of " + nna + "::" + pna);
+						System.exit(-1);
+					}
+					Bloxnode endnode = ep.get(0);
+					Bloxport p = endnode.getPort(pna);
+					if (p == null) {
+						p = new Bloxport(c.name, "master", c.type, endnode);
+						endnode.addPort(p);
+					}
+					ep.setPort(p);
 					c.add(ep);
-				} catch(BloxException ex) {
-					ex.printStackTrace();
-					System.exit(-1);
 				}
 			}
+		} catch(BloxException ex) {
+			ex.printStackTrace();
+			System.exit(-1);
 		}
 		if (json.has("connectsTo")) {
-			
+
 			super.connectGlobals();
 		}
 	}

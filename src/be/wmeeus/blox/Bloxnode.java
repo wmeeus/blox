@@ -13,11 +13,24 @@ import be.wmeeus.vhdl.*;
 
 public class Bloxnode extends Bloxelement implements Visitable {
 	ArrayList<Bloxinst> children = new ArrayList<Bloxinst>();
-	ArrayList<Bloxport> ports = new ArrayList<Bloxport>();
+	private ArrayList<Bloxport> ports = new ArrayList<Bloxport>();
 	ArrayList<Bloxconn> connections = null;
 	ArrayList<Bloxconn> localconnections = null;
 	String type = null;
 	static ArrayList<Bloxnode> foreignnodes = null;
+	ArrayList<Bloxinst> parents = new ArrayList<Bloxinst>();
+	
+	public void addParent(Bloxinst i) {
+		parents.add(i);
+	}
+	
+	public ArrayList<Bloxinst> getParents() {
+		return parents;
+	}
+	
+	public int parentCount() {
+		return parents.size();
+	}
 
 	String masterprefix = "";
 	String slaveprefix  = "";
@@ -93,7 +106,9 @@ public class Bloxnode extends Bloxelement implements Visitable {
 				for (Object co: ca) {
 					if (co instanceof JSONObject) {
 						JSONObject chd = (JSONObject)co;
-						children.add(new Bloxinst(chd));
+						Bloxinst ci = new Bloxinst(chd);
+						children.add(ci);
+						ci.parent = this;
 					} else {
 						System.err.println("Skipping object of class " + co.getClass().getName());
 					}
@@ -104,7 +119,7 @@ public class Bloxnode extends Bloxelement implements Visitable {
 				for (Object co: ca) {
 					if (co instanceof JSONObject) {
 						JSONObject chd = (JSONObject)co;
-						ports.add(new Bloxport(chd, this));
+						addPort(new Bloxport(chd, this));
 					} else {
 						System.err.println("Skipping object of class " + co.getClass().getName());
 					}
@@ -162,12 +177,17 @@ public class Bloxnode extends Bloxelement implements Visitable {
 	public Bloxport getPort(String n) {
 		if (ports==null || ports.isEmpty()) return null;
 		for (Bloxport p: ports) {
-			if (p.name.equals(n)) return p;
+			if (p.nameEquals(n)) return p;
 		}
 		return null;
 	}
 
-	public void addPort(Bloxport p) {
+	public void addPort(Bloxport p) throws BloxException {
+		for (Bloxport pp: ports) {
+			if (pp == p || pp.name.equals(p.name)) {
+				throw new BloxException("*addPort* duplicate port " + p + " in " + this);
+			}
+		}
 		ports.add(p);
 	}
 
@@ -204,6 +224,7 @@ public class Bloxnode extends Bloxelement implements Visitable {
 		if (children ==  null || children.isEmpty()) return null;
 		for (Bloxinst i: children) {
 			if (i.name.equals(n)) return i;
+			if (i.node.name.equals(n)) return i;
 		}
 		return null;
 	}
@@ -628,7 +649,7 @@ public class Bloxnode extends Bloxelement implements Visitable {
 			}
 
 			if (ep.isPort()) {
-				VHDLsymbol vp = e.get(ep.port.name + (bp!=null?("_" + bp.name):"") + suffix);
+				VHDLsymbol vp = e.get(ep.port.getVHDLname() + (bp!=null?("_" + bp.name):"") + suffix);
 				if (vp != null) {
 					if (vp instanceof VHDLport) {
 						VHDLport vport = (VHDLport)vp;
@@ -668,8 +689,9 @@ public class Bloxnode extends Bloxelement implements Visitable {
 				// master or slave?
 				Bloxnode cnode = ep.getLast();
 				boolean busclock = false, masterclock = false;
-				String portbase = ep.port.name;
-				if (portbase.endsWith("_clk") && conn.type != Bloxbus.WIRE) {
+				String portbase = ep.port.getVHDLname();
+				String portname = ep.port.name;
+				if (portname.endsWith("_clk") && conn.type != Bloxbus.WIRE) {
 					int l = ep.port.name.length();
 					portbase = ep.port.name.substring(0, l-4);
 					Bloxport clport = cnode.getPort(portbase);
@@ -678,7 +700,6 @@ public class Bloxnode extends Bloxelement implements Visitable {
 						masterclock = clport.isMaster();
 					}
 				}
-				
 				if ((!busclock && ep.isMaster()) || (busclock && masterclock)) {
 					portprefix += cnode.masterprefix;
 				} else {
@@ -696,7 +717,7 @@ public class Bloxnode extends Bloxelement implements Visitable {
 				}
 
 				String fullportname = null;
-				if (ep.port.name.isEmpty() && portprefix.endsWith("_")) {
+				if (ep.port.getVHDLname().isEmpty() && portprefix.endsWith("_")) {
 					fullportname = portprefix.substring(0, portprefix.length() - 1) + (bp!=null?("_" + bp.name):"") + portsuffix;
 				} else {
 					fullportname = portprefix + portbase + (bp!=null?("_" + bp.name):"") + portsuffix;
@@ -734,6 +755,7 @@ public class Bloxnode extends Bloxelement implements Visitable {
 		try {
 			for (Bloxconn c: connections) {
 				// make the connection
+				c.wrap();
 				c.connect(this, false);
 			}
 		} catch(BloxException ex) {
@@ -764,10 +786,6 @@ public class Bloxnode extends Bloxelement implements Visitable {
 	public String getForeign() {
 		return foreign;
 	}
-
-	public JSONObject getJSON() {
-		return json;
-	}
 	
 	public void setDesign(Bloxdesign bloxdesign) {
 		if (!(this instanceof Bloxdesign)) {
@@ -778,4 +796,29 @@ public class Bloxnode extends Bloxelement implements Visitable {
 			}
 		}
 	}
+
+	public ArrayList<Bloxconn> getConnections() {
+		return connections;
+	}
+
+	public void setConnections(ArrayList<Bloxconn> connections) {
+		this.connections = connections;
+	}
+
+	public void rename(String string) throws BloxException {
+		if (allnodes.containsKey(string))
+			throw new BloxException("Cannot rename " + name + " to " + string + ": name exists");
+		allnodes.remove(name);
+		name = string;
+		allnodes.put(string, this);
+	}
+
+	public ArrayList<Bloxport> getPorts() {
+		return ports;
+	}
+
+	public void setPorts(ArrayList<Bloxport> p) {
+		ports = p;
+	}
+
 }

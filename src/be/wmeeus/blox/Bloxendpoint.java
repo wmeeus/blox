@@ -283,4 +283,26 @@ public class Bloxendpoint {
 		System.err.println("*fanout* use case not supported: " + toString());
 		return 1;
 	}
+
+	public void wrap() {
+		if (ipath == null || ipath.isEmpty()) return;
+		Bloxnode en = ipath.get(0).node;
+		if (en.name.endsWith("_wrap")) {
+			String iname = "inst_" + en.name.substring(0, en.name.length() - 5);
+			Bloxinst bi = null;
+			for (Bloxinst i: en.children) {
+				if (i.name.equals(iname)) {
+					bi = i;
+					break;
+				}
+			}
+			if (bi == null) {
+				System.err.println("*Bloxendpoint::wrap* instance not found: " + iname + " in " + en);
+			} else {
+				ipath.add(0, bi);
+				indices.add(0, null);
+			}
+		}
+		
+	}
 }

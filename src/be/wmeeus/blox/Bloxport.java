@@ -22,43 +22,28 @@ public class Bloxport extends Bloxelement {
 	/**
 	 * Constructor
 	 * 
-	 * @param p Port from which the direction will be taken
-	 * @param n Port name
-	 * @param e Parent element
-	 */
-	public Bloxport(Bloxport p, String n, Bloxelement e) {
-		name = n;
-		direction = p.direction;
-		parent = e;
-	}
-
-	/**
-	 * Constructor
-	 * 
-	 * @param s Port name
-	 * @param n Parent element
-	 * @param t Port type
-	 */
-	public Bloxport(String s, Bloxnode n, Bloxbus t) {
-		name = s;
-		parent = n;
-		
-		type = t;
-	}
-
-	/**
-	 * Constructor
-	 * 
 	 * @param s Port name
 	 * @param d Port direction
 	 * @param t Port type
 	 * @param n Parent element
 	 */
-	public Bloxport(String s, String d, Bloxbus t, Bloxnode n) {
+	public Bloxport(String s, String d, Bloxbus t, Bloxelement n) {
 		name = s;
 		parent = n;
 		direction = d;
 		type = t;
+		
+		if (t != null && t.equals(Bloxbus.CLKRST)) {
+			if (!name.endsWith("_clk")) {
+//				name = name.substring(0, name.length() - 4);
+				if (name.isEmpty()) {
+					name = "clk";
+				} else {
+					name += "_clk";
+				}
+			}
+			System.out.println("*Bloxport* " + name + " in " + n);
+		}
 	}
 
 	/**
@@ -143,5 +128,23 @@ public class Bloxport extends Bloxelement {
 	 */
 	public boolean isArrayport() {
 		return arrayport;
+	}
+
+	public boolean nameEquals(String n) {
+		if (name.equals(n)) return true;
+		if (type.equals(Bloxbus.CLKRST)) {
+			if (name.equals(n + "_clk")) return true;
+			if (name.equals("clk") && n.isEmpty()) return true;
+		}
+		return false;
+	}
+
+	public String getVHDLname() {
+		if (type.equals(Bloxbus.CLKRST)) {
+			if (name.equals("clk")) return "";
+			if (name.endsWith("_clk")) 
+				return name.substring(0, name.length() - 4);
+		}
+		return name;
 	}
 }

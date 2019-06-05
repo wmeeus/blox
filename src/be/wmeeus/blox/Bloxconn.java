@@ -178,15 +178,18 @@ public class Bloxconn {
 		Bloxconn lconn = connect(parent, true);
 		Bloxendpoint ep = getPort();
 		if (ep == null) {
-			Bloxport p = new Bloxport(name, parent, getType());
-			if (hasMaster()) {
-				p.direction = "master";
-			} else {
-				p.direction = "slave";
+			Bloxport p = parent.getPort(name);
+			if (p == null) {
+				p = new Bloxport(name, null, getType(), parent);
+				if (hasMaster()) {
+					p.direction = "master";
+				} else {
+					p.direction = "slave";
+				}
+				parent.addPort(p);
 			}
-			parent.addPort(p);
 			ep = new Bloxendpoint(p);
-			endpoints.add(ep);
+			if (lconn != this) endpoints.add(ep); // WHY?
 			lconn.endpoints.add(ep);
 			//ep.portindex = endpoints.get(0).getLastIndex();
 			// some wild attempt...
@@ -205,10 +208,12 @@ public class Bloxconn {
 			}
 			ep.portindex = epx;
 		}
+		System.out.println("*Bloxconn:connectUp* " + parent + " local " + lconn);
 		return ep;
 	}
 
 	public Bloxconn connect(Bloxnode parent, boolean recursing) throws BloxException {
+		System.out.println("*Bloxconn::connect* " + parent + "  " + toString());
 		Bloxconn localconn = null;
 		if (isLocal()) {
 			parent.addLocalConnection(this);
@@ -300,6 +305,8 @@ public class Bloxconn {
 			localconn.type = type;
 			localconn.insertInterface(parent);
 		}
+		System.out.println("*Bloxconn::connect* " + parent + " local " + localconn.toString());
+
 		return localconn;
 	}
 
@@ -374,6 +381,12 @@ public class Bloxconn {
 
 	public Mparameter getParameter() {
 		return parameter;
+	}
+
+	public void wrap() {
+		for (Bloxendpoint ep: endpoints) {
+			ep.wrap();
+		}
 	}
 
 }

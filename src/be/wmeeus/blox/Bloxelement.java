@@ -81,4 +81,12 @@ public class Bloxelement {
 	public void setDesign(Bloxdesign design) {
 		this.design = design;
 	}
+
+	public void setJSON(JSONObject j) {
+		json = j;
+	}
+
+	public JSONObject getJSON() {
+		return json;
+	}
 }
