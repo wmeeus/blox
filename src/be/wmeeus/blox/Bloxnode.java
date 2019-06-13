@@ -448,10 +448,11 @@ public class Bloxnode extends Bloxelement implements Visitable {
 						}
 					} else {
 						for (Bloxbusport bp: p.type.ports) {
+							String bpname = ((bp.name.length()==0)?"":"_"+bp.name);
 							if (!p.isArrayport() || !bp.fanout_array) {
-								e.add(new VHDLport(pname + "_" + bp.name + suffix, bp.enslave(isslave), bp.getVHDLtype()));
+								e.add(new VHDLport(pname + bpname + suffix, bp.enslave(isslave), bp.getVHDLtype()));
 							} else {
-								e.add(new VHDLport(pname + "_" + bp.name + suffix, bp.enslave(isslave), bp.getVHDLarrayType(pg)));
+								e.add(new VHDLport(pname + bpname + suffix, bp.enslave(isslave), bp.getVHDLarrayType(pg)));
 							}
 						}
 					}
@@ -605,7 +606,8 @@ public class Bloxnode extends Bloxelement implements Visitable {
 					VHDLtype at = new VHDLarray(bt.getName()+"_array", bt, 0, epm.fanout - 1);
 					bs = new VHDLsignal("s_" + conn.name + "_" + bp.name + suffix, at);
 				} else {
-					bs = new VHDLsignal("s_" + conn.name + "_" + bp.name + suffix, 
+					String infix = ((bp.name.length()==0)?"":"_");
+					bs = new VHDLsignal("s_" + conn.name + infix + bp.name + suffix, 
 							bp.getVHDLtype());
 				}
 				a.add(bs);
@@ -718,11 +720,11 @@ public class Bloxnode extends Bloxelement implements Visitable {
 
 				String fullportname = null;
 				if (ep.port.getVHDLname().isEmpty() && portprefix.endsWith("_")) {
-					fullportname = portprefix.substring(0, portprefix.length() - 1) + (bp!=null?("_" + bp.name):"") + portsuffix;
+					fullportname = portprefix.substring(0, portprefix.length() - 1) + ((bp==null||bp.name.length()==0)?"":("_" + bp.name)) + portsuffix;
 				} else {
-					fullportname = portprefix + portbase + (bp!=null?("_" + bp.name):"") + portsuffix;
+					if (portbase.startsWith(portprefix)) portprefix = "";
+					fullportname = portprefix + portbase + ((bp==null||bp.name.length()==0)?"":("_" + bp.name)) + portsuffix;
 				}
-
 				// does iseq refer to the instance or to the port? or both?
 				VHDLnode n = bs;
 				if (!paramized && insts.size() > 1) {

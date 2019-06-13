@@ -89,4 +89,8 @@ public class Bloxelement {
 	public JSONObject getJSON() {
 		return json;
 	}
+
+	public String getName() {
+		return name;
+	}
 }

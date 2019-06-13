@@ -147,4 +147,14 @@ public class Bloxport extends Bloxelement {
 		}
 		return name;
 	}
+
+	public Bloxbus getType() {
+		return type;
+	}
+
+	public Bloxport getCounterpart(Bloxnode lnode) {
+		String nd = (isMaster()?"slave":"master");
+		Bloxport q = new Bloxport(name, nd, type, lnode);
+		return q;
+	}
 }
