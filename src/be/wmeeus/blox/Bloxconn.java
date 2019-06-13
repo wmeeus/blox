@@ -208,12 +208,10 @@ public class Bloxconn {
 			}
 			ep.portindex = epx;
 		}
-		System.out.println("*Bloxconn:connectUp* " + parent + " local " + lconn);
 		return ep;
 	}
 
 	public Bloxconn connect(Bloxnode parent, boolean recursing) throws BloxException {
-		System.out.println("*Bloxconn::connect* " + parent + "  " + toString());
 		Bloxconn localconn = null;
 		if (isLocal()) {
 			parent.addLocalConnection(this);
@@ -305,7 +303,6 @@ public class Bloxconn {
 			localconn.type = type;
 			localconn.insertInterface(parent);
 		}
-		System.out.println("*Bloxconn::connect* " + parent + " local " + localconn.toString());
 
 		return localconn;
 	}

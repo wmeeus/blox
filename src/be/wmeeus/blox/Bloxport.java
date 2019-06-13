@@ -42,7 +42,6 @@ public class Bloxport extends Bloxelement {
 					name += "_clk";
 				}
 			}
-			System.out.println("*Bloxport* " + name + " in " + n);
 		}
 	}
 

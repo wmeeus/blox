@@ -152,11 +152,10 @@ public class Bloxinst extends Bloxelement {
 			return;
 		}
 		if (node.name.endsWith("_wrap") && json.has("connectsTo")) {
-			System.err.println("Skipping connections in instance " + name + " of node " + node);
+//			System.err.println("Skipping connections in instance " + name + " of node " + node);
 			return;
 		}
 		if (json.has("connectsTo")) {
-			System.out.println("*Bloxinst::connectGlobals* in " + name + " (" + node.name + ")" );
 			try {
 				JSONArray ca = json.getJSONArray("connectsTo");
 				for (Object co: ca) {
