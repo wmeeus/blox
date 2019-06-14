@@ -151,9 +151,16 @@ public class Bloxport extends Bloxelement {
 		return type;
 	}
 
-	public Bloxport getCounterpart(Bloxnode lnode) {
+	public Bloxport addCounterpart(Bloxnode lnode, String nm) throws BloxException {
+		Bloxport q = getCounterpart(lnode, nm);
+		lnode.addPort(q);
+		return q;
+	}
+	
+	public Bloxport getCounterpart(Bloxnode lnode, String nm) throws BloxException {
 		String nd = (isMaster()?"slave":"master");
-		Bloxport q = new Bloxport(name, nd, type, lnode);
+		if (nm == null) nm = name;
+		Bloxport q = new Bloxport(nm, nd, type, lnode);
 		return q;
 	}
 }
