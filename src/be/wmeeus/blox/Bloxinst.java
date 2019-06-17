@@ -141,7 +141,11 @@ public class Bloxinst extends Bloxelement {
 			ept.add(this, idx, true);
 			return ept;
 		}
-		return null;
+		Bloxendpoint ep = node.findEndpoint(nn); // recurse if appropriate // but add ourself ...
+		if (ep != null) {
+			ep.add(this, null,  true);			
+		}
+		return ep;
 	}
 
 	/**

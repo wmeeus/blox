@@ -48,8 +48,23 @@ public class Bloxconn {
 				// local port
 				nb = b; // port of the current block
 				hasport = true;
-				p = nb.getPort(pn.substring(1));
+				String pnn = pn.substring(1);
+				String idx = null;
+				if (pnn.contains("(")) {
+					int ob = pnn.indexOf("(");
+					int cb = pnn.indexOf(")");
+					if (cb <= ob) throw new BloxException("Invalid port name: " + pn);
+					idx = pnn.substring(ob+1, cb);
+					pnn = pnn.substring(0, ob);
+				}
+				p = nb.getPort(pnn);
 				ept = new Bloxendpoint(p);
+				try {
+					ept.portindex = Mnode.mknode(idx);
+				} catch (Mexception ex) {
+					ex.printStackTrace();
+					throw new BloxException(ex.toString());
+				}
 			} else {
 				ept = b.findEndpoint(pn);
 			}
@@ -255,7 +270,7 @@ public class Bloxconn {
 				}
 				//			System.err.println("Bloxconn::connect* endpoint " + ep);
 				Bloxconn conadd = null;
-				if (parameter == null) {
+				if (parameter == null || ep.getIndex(0) == null) {
 					conadd = conaddm.get(Mvalue.NONE);
 				} else {
 					conadd = conaddm.get(ep.getIndex(0));
@@ -266,7 +281,7 @@ public class Bloxconn {
 					Bloxconn newconn = new Bloxconn(name);
 					newconn.parameter = parameter;
 					newconn.add(endstrip);
-					if (parameter == null) {
+					if (parameter == null || ep.getIndex(0) == null) {
 						conaddm.put(Mvalue.NONE, newconn);
 					} else {
 						conaddm.put(ep.getIndex(0), newconn);

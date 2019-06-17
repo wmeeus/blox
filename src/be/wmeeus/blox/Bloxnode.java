@@ -487,6 +487,7 @@ public class Bloxnode extends Bloxelement implements Visitable {
 					paramized = true;
 					for (Bloxendpoint ep: conn.endpoints) {
 						Mnode indp = ep.getIndex(0);
+						if (indp == null) indp = ep.portindex; // TODO is this OK?
 						if (indp != null) {
 							try {
 								ldom = conn.getParameter().domain(indp);
