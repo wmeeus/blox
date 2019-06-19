@@ -8,28 +8,54 @@ import be.wmeeus.symmath.expression.*;
 import be.wmeeus.symmath.util.Mexception;
 import be.wmeeus.util.PP;
 
+/**
+ * Class Bloxinst represents an instance of a node
+ * 
+ * @author Wim Meeus
+ *
+ */
 public class Bloxinst extends Bloxelement {
-	String name;
+	/**
+	 * The instantiated node
+	 */
 	Bloxnode node;
+	
+	/**
+	 * Returns the instantiated node
+	 * @return the instantiated node
+	 */
 	public Bloxnode getNode() {
 		return node;
 	}
 
-	/**
-	 * Contains ports that are added for this particular instance, to link with submodules
-	 */
-	ArrayList<Bloxport> ports = null;
-	public void addPort(Bloxport p) {
-		if (ports == null) {
-			ports = new ArrayList<Bloxport>();
-		}
-		ports.add(new Bloxport(p.name /* TODO needs to be unique */, p.direction, null, this));
-	}
+//	/**
+//	 * Contains ports that are added for this particular instance, to link with submodules
+//	 */
+//	ArrayList<Bloxport> ports = null;
+//	public void addPort(Bloxport p) {
+//		if (ports == null) {
+//			ports = new ArrayList<Bloxport>();
+//		}
+//		ports.add(new Bloxport(p.name /* TODO needs to be unique */, p.direction, null, this));
+//	}
 
+	/**
+	 * The parameter (generic) map of this instance
+	 */
 	Hashtable<String, Mparameter> paramap = new Hashtable<String, Mparameter>(); 
 
+	/**
+	 * The port map of this instance
+	 */
 	Hashtable<Bloxport, Bloxconn> portmap = new Hashtable<Bloxport, Bloxconn>();
 
+	/**
+	 * Instantiate a node
+	 * 
+	 * @param s the instance name
+	 * @param n the node to instantiate
+	 * @throws BloxException
+	 */
 	public Bloxinst(String s, Bloxnode n) throws BloxException {
 		s = s.trim();
 		if ((s==null || s.isEmpty()) && n==null) 
@@ -45,6 +71,11 @@ public class Bloxinst extends Bloxelement {
 		node.addParent(this);
 	}
 
+	/**
+	 * Construct an instance from a JSON object
+	 * @param o the JSON object
+	 * @throws BloxException
+	 */
 	public Bloxinst(JSONObject o) throws BloxException {
 		json = o;
 		try {
@@ -70,6 +101,12 @@ public class Bloxinst extends Bloxelement {
 		}
 	}
 
+	/**
+	 * Map an integer parameter
+	 * @param pname parameter name
+	 * @param pval parameter value
+	 * @throws BloxException
+	 */
 	public void map(String pname, int pval) throws BloxException {
 		try {
 			Mparameter p = new Mparameter(pname, pval);
@@ -80,12 +117,21 @@ public class Bloxinst extends Bloxelement {
 		}
 	}
 
+	/**
+	 * Map a port to a connection
+	 * @param pname the port name
+	 * @param c the connection
+	 * @throws BloxException
+	 */
 	public void map(String pname, Bloxconn c) throws BloxException {
 		Bloxport b = node.getPort(pname);
 		if (b==null) throw new BloxException("Port " + pname + " of block " + node.name + " not defined");
 		portmap.put(b,  c);
 	}
 
+	/**
+	 * Returns a String representation of this instance
+	 */
 	public String toString() {
 		if (repeat>1) {
 			return name + "(" + repeat + ") (" + node.name + ")";
@@ -93,6 +139,11 @@ public class Bloxinst extends Bloxelement {
 		return name + " (" + node.name + ")";
 	}
 
+	/**
+	 * Build a String representation of this instance and its subnodes up to a given depth
+	 * @param maxdepth the maximum hierarchical depth to include
+	 * @param sb the String builder to append to
+	 */
 	public void printHierarchy(int maxdepth, StringBuilder sb) {
 		sb.append(PP.I + toString() + "\n");
 		if (maxdepth>1) {
@@ -102,16 +153,31 @@ public class Bloxinst extends Bloxelement {
 		}
 	}
 
+	/**
+	 * Accept methd for the Visitor design pattern
+	 * @param visitor
+	 */
 	public void accept(Visitor visitor) {
 		visitor.visit(this);
 		if (node!=null) node.accept(visitor);
 	}
 
+	/**
+	 * Find a node with a particular name
+	 * @param nn the name to search for
+	 * @return the requested node, or null if no such node was found inside this instance
+	 */
 	public Bloxnode findBlock(String nn) {
 		if (node.name.equals(nn)) return node;
 		return node.findBlock(nn);
 	}
 
+	/**
+	 * Find a node with a particular name, return the result as an endpoint object
+	 * @param nn the name to search for
+	 * @return the requested node as an endpoint, or null if no such node was foiunt inside this instance
+	 * 
+	 */
 	public Bloxendpoint findEndBlock(String nn) {
 		if (name.equals(nn)) return new Bloxendpoint(this, null); // also match instance name => ??
 
@@ -121,6 +187,12 @@ public class Bloxinst extends Bloxelement {
 		return ep.add(this, null, true);
 	}
 
+	/**
+	 * Find a particular endpoint
+	 * @param nn a String representation of the endpoint, formatted as node_name:port_name
+	 * @return the requested endpoint
+	 * @throws BloxException
+	 */
 	public Bloxendpoint findEndpoint(String nn) throws BloxException {
 		int sep = nn.indexOf(":");
 		if (sep<1) throw new BloxException ("Expecting a path, got " + nn + " at " + toString());

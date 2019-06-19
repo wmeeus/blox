@@ -11,30 +11,88 @@ import be.wmeeus.symmath.util.Mexception;
 import be.wmeeus.util.*;
 import be.wmeeus.vhdl.*;
 
+/**
+ * Class Bloxnode represents a block in a block diagram. The terms "block", "node" and "module" 
+ * throughout this project all refer to this class.
+ * 
+ * @author Wim Meeus
+ *
+ */
 public class Bloxnode extends Bloxelement implements Visitable {
+	/**
+	 * List of instances in this node
+	 */
 	ArrayList<Bloxinst> children = new ArrayList<Bloxinst>();
-	private ArrayList<Bloxport> ports = new ArrayList<Bloxport>();
-	ArrayList<Bloxconn> connections = null;
-	ArrayList<Bloxconn> localconnections = null;
-	String type = null;
-	static ArrayList<Bloxnode> foreignnodes = null;
-	ArrayList<Bloxinst> parents = new ArrayList<Bloxinst>();
 	
+	/**
+	 * List of ports of this node
+	 */
+	private ArrayList<Bloxport> ports = new ArrayList<Bloxport>();
+	
+	/**
+	 * List of "raw" connections in this node i.e. not localized, may span multiple hierarchical levels
+	 */
+	ArrayList<Bloxconn> connections = null;
+	
+	/**
+	 * List of "local" connections in this node, i.e. connections inside this node
+	 */
+	ArrayList<Bloxconn> localconnections = null;
+	
+	/**
+	 * Type indication of this node: hierarchy, functional, foreign ...
+	 */
+	String type = null;
+	
+	/**
+	 * List of all "foreign" nodes in the design
+	 */
+	static ArrayList<Bloxnode> foreignnodes = null;
+	
+	/**
+	 * List of all instances of this node in the design
+	 */
+	ArrayList<Bloxinst> parents = new ArrayList<Bloxinst>();
+
+	/**
+	 * Add an instance of this node to the instances list
+	 * @param i the instance of this node to add to the list
+	 */
 	public void addParent(Bloxinst i) {
 		parents.add(i);
 	}
 	
+	/**
+	 * Returns the list of instances of this node
+	 * @return the list of instances of this node
+	 */
 	public ArrayList<Bloxinst> getParents() {
 		return parents;
 	}
 	
+	/**
+	 * Returns the number of instances of this node in the design. An array of instances is counted as one.
+	 * @return the number of instances of this node in the design
+	 */
 	public int parentCount() {
 		return parents.size();
 	}
 
+	/**
+	 * String prefix for master port names
+	 */
 	String masterprefix = "";
+	/**
+	 * String prefix for slave port names
+	 */
 	String slaveprefix  = "";
+	/**
+	 * String prefix for input port names
+	 */
 	String inputprefix  = "";
+	/**
+	 * String prefix for output port names
+	 */
 	String outputprefix = "";
 
 	/**
@@ -43,20 +101,38 @@ public class Bloxnode extends Bloxelement implements Visitable {
 	 */
 	String foreign = null;
 
+	/**
+	 * Indicates whether this node is a "foreign" module i.e. implemented outside of the Blox framework 
+	 */
 	boolean isforeign = false;
 
-	public String getName() {
-		return name;
-	}
-
+	/**
+	 * A table of all nodes in the design
+	 */
 	static Hashtable<String, Bloxnode> allnodes = new Hashtable<String, Bloxnode>();
+	
+	/**
+	 * Returns a node with a particular name
+	 * @param s the name of the node to get
+	 * @return the requested node, or null if no such node exists in the design
+	 */
 	public static Bloxnode getNode(String s) {
 		return allnodes.get(s);
 	}
+	
+	/**
+	 * Returns the number of nodes in the design
+	 * @return the number of nodes in the design
+	 */
 	public static int nodeCount() {
 		return allnodes.size();
 	}
 
+	/**
+	 * Constructs a node with the given name
+	 * @param s the name of the new node
+	 * @throws BloxException if a node with the given name already exists in the design
+	 */
 	public Bloxnode(String s) throws BloxException {
 		if (allnodes.containsKey(s)) {
 			throw new BloxException("Block name used twice: " + s);
@@ -67,6 +143,12 @@ public class Bloxnode extends Bloxelement implements Visitable {
 		allnodes.put(s, this);
 	}
 
+	/**
+	 * Retrieves an existing node or constructs a node from a JSON object
+	 * @param o the JSON object which contains the node description
+	 * @return the node
+	 * @throws BloxException
+	 */
 	public static Bloxnode mkBloxnode(JSONObject o) throws BloxException {
 		if (!o.has("name")) {
 			throw new BloxException("Node without a name: " + o);
@@ -96,6 +178,11 @@ public class Bloxnode extends Bloxelement implements Visitable {
 		return n;
 	}
 	
+	/**
+	 * Constructs a new node from a JSON object
+	 * @param o the JSON object which contains the node description
+	 * @throws BloxException
+	 */
 	public Bloxnode(JSONObject o) throws BloxException {
 		super(o);
 		try {
@@ -174,6 +261,11 @@ public class Bloxnode extends Bloxelement implements Visitable {
 		}
 	}
 
+	/**
+	 * Retrieves a port from this node
+	 * @param n the port name
+	 * @return the requested port
+	 */
 	public Bloxport getPort(String n) {
 		if (ports==null || ports.isEmpty()) return null;
 		for (Bloxport p: ports) {
@@ -182,6 +274,11 @@ public class Bloxnode extends Bloxelement implements Visitable {
 		return null;
 	}
 
+	/**
+	 * Adds a port to the current node
+	 * @param p the port to add
+	 * @throws BloxException if this node already contains a port with that name
+	 */
 	public void addPort(Bloxport p) throws BloxException {
 		for (Bloxport pp: ports) {
 			if (pp == p || pp.name.equals(p.name)) {
@@ -191,16 +288,29 @@ public class Bloxnode extends Bloxelement implements Visitable {
 		ports.add(p);
 	}
 
+	/**
+	 * Add a "raw" connection to this node
+	 * @param c the connection to add
+	 */
 	public void addConnection(Bloxconn c) {
 		if (connections==null) connections = new ArrayList<Bloxconn>();
 		connections.add(c);
 	}
 
+	/**
+	 * Add a "local" connection to this node
+	 * @param c the connection to add
+	 */
 	public void addLocalConnection(Bloxconn c) {
 		if (localconnections==null) localconnections = new ArrayList<Bloxconn>();
 		localconnections.add(c);
 	}
 
+	/**
+	 * Add an instance of a node to this node 
+	 * @param i the instance to add
+	 * @return the instance
+	 */
 	public Bloxinst addInstance(Bloxinst i) {
 		if (children == null) children = new ArrayList<Bloxinst>();
 		children.add(i);
@@ -220,6 +330,11 @@ public class Bloxnode extends Bloxelement implements Visitable {
 		return null;
 	}
 
+	/**
+	 * Retrieve an instance of which either the instance name or the node name equals the given name
+	 * @param n the name of the instance or node to search for
+	 * @return the requested instance, or null if no such instance exists
+	 */
 	public Bloxinst getChild(String n) {
 		if (children ==  null || children.isEmpty()) return null;
 		for (Bloxinst i: children) {
@@ -229,8 +344,18 @@ public class Bloxnode extends Bloxelement implements Visitable {
 		return null;
 	}
 
+	/**
+	 * A unique integer for adding paths (obsolete/unmaintained)
+	 */
 	static int uniqueint = 0;
 
+	/**
+	 * Add a path hierarchy to the design (obsolete/unmaintained)
+	 * @param p
+	 * @param n
+	 * @return
+	 * @throws BloxException
+	 */
 	public Bloxnode addPath(String p, String n) throws BloxException {
 		while (p.startsWith("/")) p = p.substring(1);
 		int sl = p.indexOf("/");
@@ -285,10 +410,18 @@ public class Bloxnode extends Bloxelement implements Visitable {
 		// NOTREACHED // return this;
 	}
 
+	/**
+	 * returns a string representation of this node
+	 */
 	public String toString() {
 		return "node " + name;
 	}
 
+	/**
+	 * Returns a String representation of this node and its subnodes up to a certain depth
+	 * @param maxdepth the maximum depth to include 
+	 * @return a String representation of this node and its subnodes
+	 */
 	public String printHierarchy(int maxdepth) {
 		StringBuilder r = new StringBuilder(PP.I + "node " + name + "\n");
 		PP.down();
@@ -336,12 +469,18 @@ public class Bloxnode extends Bloxelement implements Visitable {
 		return r.toString();
 	}
 
+	/**
+	 * Print a list of all nodes to stdout (obsolete/never called)
+	 */
 	public static void printAllNodes() {
 		for (Bloxnode n: allnodes.values()) {
 			System.out.println(n.toString());
 		}
 	}
 
+	/**
+	 * Accept method for the Visitor design pattern
+	 */
 	public void accept(Visitor visitor) {
 		visitor.visit(this);
 		for (Bloxinst b: children) {
@@ -352,10 +491,20 @@ public class Bloxnode extends Bloxelement implements Visitable {
 		}
 
 	}
+	
+	/**
+	 * Returns a list of instances in this node
+	 * @return the list of instances in this node
+	 */
 	public ArrayList<Bloxinst> getChildren() {
 		return children;
 	}
 
+	/**
+	 * Search for a node with a given name
+	 * @param nn the name to search for
+	 * @return the requested node, or null if no node with the given name is found inside this node
+	 */
 	public Bloxnode findBlock(String nn) {
 		for (Bloxinst bi: children) {
 			Bloxnode bn = bi.findBlock(nn);
@@ -364,6 +513,11 @@ public class Bloxnode extends Bloxelement implements Visitable {
 		return null;
 	}
 
+	/**
+	 * Search for a node with a given name, return the result as an endpoint object
+	 * @param nn the name to search for
+	 * @return the requested endpoint, or null if no node with the given name is found inside this node
+	 */
 	public Bloxendpoint findEndBlock(String nn) {
 		for (Bloxinst bi: children) {
 			Bloxendpoint bn = bi.findEndBlock(nn);
@@ -372,6 +526,12 @@ public class Bloxnode extends Bloxelement implements Visitable {
 		return null;
 	}
 
+	/**
+	 * Search for a particular endpoint given as a string, return the result as an endpoint object 
+	 * @param pn the endpoit to look for, either a port_name or a node_name:port_name
+	 * @return the requested endpoint, or null if the endpoint wasn't found 
+	 * @throws BloxException
+	 */
 	public Bloxendpoint findEndpoint(String pn) throws BloxException {
 		if (!(pn.contains(":"))) {
 			int sep = pn.indexOf("(");
@@ -399,13 +559,26 @@ public class Bloxnode extends Bloxelement implements Visitable {
 		return null;
 	}
 
+	/**
+	 * The VHDL entity representing this node
+	 */
 	VHDLentity e = null;
 
+	/**
+	 * Sets the VHDL entity representing this node
+	 * @param ve the VHDL entity
+	 * @return the VHDL entity
+	 */
 	public VHDLentity setVHDL(VHDLentity ve) {
 		e = ve;
 		return ve;
 	}
 
+	/**
+	 * Generate a VHDL entity from this node
+	 * @return the VHDL entity
+	 * @throws BloxException
+	 */
 	public VHDLentity vhdl() throws BloxException {
 		System.out.println("*Bloxnode::vhdl* node: " + name);
 		if (e!=null) return e;
@@ -545,6 +718,19 @@ public class Bloxnode extends Bloxelement implements Visitable {
 		return e;
 	}
 
+	/**
+	 * Connect a port of a bus (all endpoints)
+	 * @param a
+	 * @param instances
+	 * @param conn
+	 * @param paramized
+	 * @param bp
+	 * @param parseq
+	 * @param seq
+	 * @param ldom
+	 * @throws VHDLexception
+	 * @throws BloxException
+	 */
 	private void vhdlConnectBusport(VHDLarchitecture a, Hashtable<Bloxnode, ArrayList<VHDLinstance>> instances,
 			Bloxconn conn, boolean paramized, Bloxbusport bp, int parseq, int seq, 
 			ArrayList<Integer> ldom) throws VHDLexception, BloxException {
@@ -632,6 +818,11 @@ public class Bloxnode extends Bloxelement implements Visitable {
 		}
 	}
 
+	/**
+	 * Get the connection with a given name (obsolete - never called)
+	 * @param s the name to look for
+	 * @return the requested connection, or null if the connection does not exist
+	 */
 	private Bloxconn getConnection(String s) {
 		if (connections == null) return null;
 		for (Bloxconn c: connections) {
@@ -639,7 +830,25 @@ public class Bloxnode extends Bloxelement implements Visitable {
 		}
 		return null;
 	}
-	
+
+	/**
+	 * Connect a single endpoint of a bus
+	 * @param a
+	 * @param instances
+	 * @param conn
+	 * @param paramized
+	 * @param bp
+	 * @param parseq
+	 * @param seq
+	 * @param ldom
+	 * @param ep
+	 * @param bs
+	 * @param fanoutstart
+	 * @param suffix
+	 * @return
+	 * @throws VHDLexception
+	 * @throws BloxException
+	 */
 	private VHDLsignal vhdlConnectSingleBusport(VHDLarchitecture a, Hashtable<Bloxnode, ArrayList<VHDLinstance>> instances,
 			Bloxconn conn, boolean paramized, Bloxbusport bp, int parseq, int seq, 
 			ArrayList<Integer> ldom, Bloxendpoint ep, VHDLnode bs, int fanoutstart, String suffix) throws VHDLexception, BloxException {
@@ -773,6 +982,9 @@ public class Bloxnode extends Bloxelement implements Visitable {
 		// functionality moved to instances
 	}
 
+	/**
+	 * Implement a "foreign" node (future work)
+	 */
 	public void implementForeign() {
 		// TODO implement foreign types like VHDL, Verilog, IPxact... future work!
 

@@ -4,12 +4,38 @@ import org.json.*;
 
 import be.wmeeus.vhdl.*;
 
+/**
+ * Class Bloxbusport represents a port (signal) of a Bloxbus 
+ * @author Wim Meeus
+ *
+ */
 public class Bloxbusport {
+	/**
+	 * Port name
+	 */
 	String name;
+	
+	/**
+	 * Signal direction when this is a master port
+	 */
 	String master_dir;
+	
+	/**
+	 * Bit width
+	 */
 	int width = 1;
+	
+	/**
+	 * Blox bus of which this is a port
+	 */
 	Bloxbus parent = null;
-	String type = null; // null type means vector or wire
+	
+	/**
+	 * Port type. A null type means vector or wire
+	 */
+	String type = null;
+	
+	
 	boolean fanout_array = false;
 	boolean fanout_wire = false;
 

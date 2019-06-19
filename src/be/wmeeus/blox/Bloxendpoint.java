@@ -5,19 +5,46 @@ import java.util.ArrayList;
 import be.wmeeus.symmath.expression.*;
 import be.wmeeus.symmath.util.Mexception;
 
+/**
+ * Class Bloxendpoint represents an endpoint of a connection. An endpoint consists of a port and 
+ * a hierarchical path of instances. The port as well as each hierarchical path item may have an 
+ * associated parameter expression ("index").
+ *   
+ * @author Wim Meeus
+ *
+ */
 public class Bloxendpoint {
+	/**
+	 * Port of this endpoint
+	 */
 	Bloxport port = null;
+
+	/**
+	 * Index associated with the port
+	 */
 	Mnode portindex = null;
-	//	String portidx = null;
-//	private ArrayList<Bloxnode> path = null;
+
+	/**
+	 * List of path items
+	 * 
+	 */
 	private ArrayList<Bloxinst> ipath = null;
+
+	/**
+	 * List of path indices. The lists of path items and path indices must have the same 
+	 * length at all times. Path items without an index get null in the indices list.
+	 */
 	private ArrayList<Mnode> indices = null;
-	
+
 	/**
 	 * Fanout of this endpoint
 	 */
 	int fanout = 1;
-	
+
+	/**
+	 * Construct an endpoint from a port
+	 * @param p
+	 */
 	public Bloxendpoint(Bloxport p) {
 		port = p;
 	}
@@ -32,26 +59,26 @@ public class Bloxendpoint {
 	public Bloxendpoint(Bloxendpoint ep, Bloxinst n, Mnode ind) {
 		port = ep.port;
 		portindex = ep.portindex;
-//		path = new ArrayList<Bloxnode>();
 		ipath = new ArrayList<Bloxinst>();
 		indices = new ArrayList<Mnode>();
 		if (ep.ipath != null) {
-//			path.addAll(ep.path);
 			ipath.addAll(ep.ipath);
 			indices.addAll(ep.indices);
 		}
 		if (n != null) {
-//			path.add(n.node);
 			ipath.add(n);
 			indices.add(ind);
 		}
 	}
 
+	/**
+	 * Construct an endpoint from an instance and an associated index
+	 * @param b the instance
+	 * @param ind the index
+	 */
 	public Bloxendpoint(Bloxinst b, String ind) {
-//		path = new ArrayList<Bloxnode>();
 		ipath = new ArrayList<Bloxinst>();
 		indices = new ArrayList<Mnode>();
-//		path.add(b.node);
 		ipath.add(b);
 		if (ind == null) {
 			indices.add(null);
@@ -64,22 +91,31 @@ public class Bloxendpoint {
 		}
 	}
 
+	/**
+	 * Set the port of this endpoint
+	 * @param p the port
+	 * @return this endpoint
+	 */
 	public Bloxendpoint setPort(Bloxport p) {
 		port = p;
 		return this;
 	}
 
+	/**
+	 * Add an item and associated index to this endpoint
+	 * @param b the item (instance)
+	 * @param ind the index
+	 * @param atfront add the new item at the front (true) or rear (false) end of the list
+	 * @return this endpoint
+	 */
 	public Bloxendpoint add(Bloxinst b, String ind, boolean atfront) {
 		if (ipath == null) {
-//			path = new ArrayList<Bloxnode>();
 			ipath = new ArrayList<Bloxinst>();
 			indices = new ArrayList<Mnode>();
 		}
 		if (atfront) {
-//			path.add(b.node);
 			ipath.add(b);
 		} else {
-//			path.add(0, b.node);
 			ipath.add(b);
 		}
 		if (ind == null) {
@@ -102,41 +138,75 @@ public class Bloxendpoint {
 		return this;
 	}
 
+	/**
+	 * Return the indicated node of the path
+	 * @param i the index in the path
+	 * @return the requested node
+	 */
 	public Bloxnode get(int i) {
 		if (ipath == null || ipath.size() <= i) return null;
 		return ipath.get(ipath.size() - i - 1).getNode();
 	}
 
+	/**
+	 * Return the indicated instance of the path
+	 * @param i the index in the path
+	 * @return the requested instance
+	 */
 	public Bloxinst getInst(int i) {
 		if (ipath == null || ipath.size() <= i) return null;
 		return ipath.get(ipath.size() - i - 1);
 	}
 
+	/**
+	 * Return the indicated parameter index
+	 * @param i the index in the path
+	 * @return the requested parameter index
+	 */
 	public Mnode getIndex(int i) {
 		if (ipath == null || ipath.size() <= i) return null;
 		return indices.get(ipath.size() - i - 1);
 	}
 
+	/**
+	 * Return the last node in the path
+	 * @return the last node in the path
+	 */
 	public Bloxnode getLast() {
 		if (ipath == null) return null;
 		return ipath.get(0).getNode();
 	}
 
+	/**
+	 * Return the last instance in the path
+	 * @return the last instance in the path
+	 */
 	public Bloxinst getLastInst() {
 		if (ipath == null) return null;
 		return ipath.get(0);
 	}
 
+	/**
+	 * Return the last parameter index of the path
+	 * @return the last parameter index of the path
+	 */
 	public Mnode getLastIndex() {
 		if (indices == null) return null;
 		return indices.get(0);
 	}
 
+	/**
+	 * Return the length (hierarchical depth) of the path
+	 * @return the length (hierarchical depth) of the path
+	 */
 	public int pathlength() {
 		if (ipath == null) return 0;
 		return ipath.size();
 	}
 
+	/**
+	 * Returns a String representation of this endpoint
+	 */
 	public String toString() {
 
 		String r = "noport";
@@ -178,16 +248,33 @@ public class Bloxendpoint {
 		return r;
 	}
 
+	/**
+	 * Determines whether this endpoint is "local", i.e. whether the hierarchical path
+	 * is 0 or 1 levels deep 
+	 * @return true if this endpoint is "local"
+	 */
 	public boolean isLocal() {
 		if (ipath == null || ipath.size() < 2) return true;
 		return false;
 	}
 
+	/**
+	 * Determines whether this endpoint contains only a port and no hierarchical path
+	 * @return true if this endpoint represents a port without hierarchy
+	 */
 	public boolean isPort() {
 		if (ipath == null || ipath.isEmpty()) return true;
 		return false;
 	}
 
+	/**
+	 * Generate a new endpoint from this one, removing a given number of hierarchical
+	 * levels from the path. If the number is 0, this endpoint is returned. If the number exceeds
+	 * the number of levels in the hierarchy, an exception is thrown.
+	 * @param levels the number of levels to be stripped off
+	 * @return the new endpoint, or this one if no levels get stripped
+	 * @throws BloxException if the number of levels to strip exceeds the number of levels of this endpoint
+	 */
 	public Bloxendpoint strip(int levels) throws BloxException {
 		if (levels == 0) return this;
 		int pathsize = ipath.size();
@@ -206,6 +293,14 @@ public class Bloxendpoint {
 		return result;
 	}
 
+	/**
+	 * Generate a new endpoint from this one, removing a given number of hierarchical
+	 * levels from the path. If the number is 0, this endpoint is returned. If the number exceeds
+	 * the number of levels in the hierarchy, an exception is thrown.
+	 * @param levels the number of levels to be stripped off
+	 * @return the new endpoint, or this one if no levels get stripped
+	 * @throws BloxException if the number of levels to strip exceeds the number of levels of this endpoint
+	 */
 	public Bloxendpoint stripLast(int levels) throws BloxException {
 		if (levels > 0) {
 			if (ipath == null || indices == null) {
@@ -215,7 +310,7 @@ public class Bloxendpoint {
 				throw new BloxException("Cannot strip: attempting to strip more levels than available");
 			}
 			for (int i = 0; i < levels; i++) {
-//				path.remove(0);
+				//				path.remove(0);
 				ipath.remove(0);
 				indices.remove(0);
 			}
@@ -237,22 +332,16 @@ public class Bloxendpoint {
 		return port.isMaster();
 	}
 
-	public ArrayList<Mnode> getFirstIndices() {
-		ArrayList<Mnode> l = null;
-		for (Mnode i: indices) {
-			if (i != null) {
-
-			}
-		}
-
-		return l;
-	}
-
+	/**
+	 * Return a non-null index expression 
+	 * @return a non-null parameter index expression from this endpoint, or null if this endpoint
+	 *    doesn't have any non-null parameter index expression 
+	 */
 	public Mnode anyIndex() {
 		for (Mnode n: indices) {
 			if (n != null) return n; 
 		}
-		return null;
+		return portindex;
 	}
 
 	/**
@@ -261,25 +350,25 @@ public class Bloxendpoint {
 	 */
 	public int fanout(Mparameter p) throws BloxException {
 		if (ipath == null) return 1;
-		
+
 		int repeat = ipath.get(0).repeat;
 		if (repeat == 1 || getIndex(0) == null) {
 			return repeat;
 		}
-		
+
 		// TODO where do unexpected indices come from?
-		
-//		if (indices == null || indices.get(0) == null) {
-//			return 1;
-//		}
-//		if (p == null) throw new BloxException("Parameter required");
-//		int f = 1;
-//		try {
-//			f = p.image(indices.get(0)).size();
-//		} catch(Mexception ex) {
-//			ex.printStackTrace();
-//		}
-//		return f;
+
+		//		if (indices == null || indices.get(0) == null) {
+		//			return 1;
+		//		}
+		//		if (p == null) throw new BloxException("Parameter required");
+		//		int f = 1;
+		//		try {
+		//			f = p.image(indices.get(0)).size();
+		//		} catch(Mexception ex) {
+		//			ex.printStackTrace();
+		//		}
+		//		return f;
 		System.err.println("*fanout* use case not supported: " + toString());
 		return 1;
 	}
@@ -303,6 +392,6 @@ public class Bloxendpoint {
 				indices.add(0, null);
 			}
 		}
-		
+
 	}
 }

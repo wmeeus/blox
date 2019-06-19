@@ -5,30 +5,88 @@ import java.util.*;
 
 import org.json.*;
 
+/**
+ * Class Bloxbus represents the definition of a bus and its signals
+ * @author Wim Meeus
+ *
+ */
 public class Bloxbus {
+	/**
+	 * Bus name
+	 */
 	String name;
+	
+	/**
+	 * Ports / signals of this bus
+	 */
 	ArrayList<Bloxbusport> ports = null;
+	
+	/**
+	 * Is this bus symmetric (no master or slave)
+	 */
 	public boolean symmetric = false;
+	
+	/**
+	 * Is this bus simple (all signals follow the same direction)
+	 */
 	boolean simple = false;
+	
+	/**
+	 * VHDL package(s) required for this bus, if any
+	 */
 	String vhdlpackage = null;
+	
+	/**
+	 * Bus topology: tree, pointopoint, ring...
+	 */
 	String topology = null;
 	
+	/**
+	 * Determines whether this bus is simple (all signals follow the same direction)
+	 * @return true if this bus is simple
+	 */
 	public boolean isSimple() {
 		return simple;
 	}
 	
+	/**
+	 * A table with vector bus types of various widths
+	 */
 	private static Hashtable<Integer, Bloxbus> vectors = new Hashtable<Integer, Bloxbus>(); 
 
+	/**
+	 * A table with all bus types used in the design
+	 */
 	static Hashtable<String, Bloxbus> alltypes = new Hashtable<String, Bloxbus>(); 
+
+	/**
+	 * Retrieves a bus definition with a given name. If no bus with the name exists in the design,
+	 * a new (empty) bus definition is returned 
+	 * @param n the bus name
+	 * @return the bus definition
+	 * @throws BloxException
+	 */
 	public static Bloxbus get(String n) throws BloxException {
 		Bloxbus b = alltypes.get(n);
 		if (b!=null) return b;
 		return new Bloxbus(n);
 	}
 
+	/**
+	 * A bus definition of a single wire
+	 */
 	public static Bloxbus WIRE;
-	public static Bloxbus CLKRST;
 	
+	/**
+	 * A bus definition of a clock and an associated reset
+	 */
+	public static Bloxbus CLKRST;
+
+	/**
+	 * A generator for vector bus definitions.
+	 * @param n vector width
+	 * @return a bus definition of a vector with the requested width
+	 */
 	public static Bloxbus VECTOR(int n) {
 		if (n==1) return WIRE;
 		if (vectors.containsKey(n)) return vectors.get(n);
@@ -38,6 +96,9 @@ public class Bloxbus {
 		return b;
 	}
 	
+	/**
+	 * Static constructor to initialize the WIRE and CLKRST bus definitions
+	 */
 	static {
 		try {
 			WIRE = new Bloxbus("wire");
@@ -48,14 +109,24 @@ public class Bloxbus {
 			ex.printStackTrace();
 		}
 	}
-	
+
+	/**
+	 * Constructor for a vector bus definition. It is recommended to use the VECTOR() method instead,
+	 * which will reuse existing vector types whenever possible.
+	 * @param n the vector width
+	 */
 	public Bloxbus(int n) {
 		name = "vector(" + n + ")";
 		ports = new ArrayList<Bloxbusport>();
 		ports.add(new Bloxbusport("", "out", n, this));
 		simple = true;
 	}
-	
+
+	/**
+	 * Construct a bus with a given name. The bus definition is read from a file <name>.json
+	 * @param n the name
+	 * @throws BloxException
+	 */
 	public Bloxbus(String n) throws BloxException {
 		name = n;
 
@@ -104,6 +175,9 @@ public class Bloxbus {
 		}
 	}
 
+	/**
+	 * Returns a string representation of this bus
+	 */
 	public String toString() {
 		String r = "bus " + name + "(";
 		boolean first = true;
@@ -116,13 +190,33 @@ public class Bloxbus {
 		return r + ")";
 	}
 	
+	/**
+	 * A table with connectors (interfaces) to this bus
+	 */
 	static Hashtable<String, Bloxnode> connectors = null;
+
+	/**
+	 * Returns a connector between 2 busses
+	 * @param slave bus at the slave side of the connector
+	 * @param master bus at the master side of the connector
+	 * @return the connector
+	 * @throws BloxException
+	 */
 	public static Bloxnode getConnector(Bloxbus slave, Bloxbus master) throws BloxException {
 		ArrayList<Bloxbus> slvs = new ArrayList<Bloxbus>();
 		slvs.add(slave);
 		return getConnector(slvs, master);
 	}
 	
+	/**
+	 * Gets a connector between 2 or more busses. The connector may have multiple slave ports 
+	 * and one master port. The master port may accomodate multiple slaves.
+	 *  
+	 * @param slaves the last of slave ports 
+	 * @param master the master port
+	 * @return the requested connector
+	 * @throws BloxException
+	 */
 	public static Bloxnode getConnector(ArrayList<Bloxbus> slaves, Bloxbus master) throws BloxException {
 		String nm = null;
 		if (connectors == null) connectors = new Hashtable<String, Bloxnode>();
@@ -162,6 +256,10 @@ public class Bloxbus {
 		return n;
 	}
 	
+	/**
+	 * Gets the VHDL package needed for this bus
+	 * @return the VHDL package
+	 */
 	public String getVHDLpackage() {
 		return vhdlpackage;
 	}

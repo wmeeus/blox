@@ -7,23 +7,73 @@ import org.json.*;
 import be.wmeeus.symmath.expression.*;
 import be.wmeeus.symmath.util.Mexception;
 
+/**
+ * Class Bloxconn contains a connection in a block diagram. A connection is a set of 
+ * interconnected endpoints. 
+ * 
+ * @author Wim Meeus
+ *
+ */
 public class Bloxconn {
+	/**
+	 * Name of this connection
+	 */
 	String name;
+	
+	/**
+	 * The list of end points of this connection
+	 */
 	ArrayList<Bloxendpoint> endpoints = new ArrayList<Bloxendpoint>();
+	
+	/**
+	 * Optional parameter of this connection
+	 */
 	Mparameter parameter = null;
+	
+	/**
+	 * Type of this connection (single wire, vector, bus...) 
+	 */
 	Bloxbus type = null;
+	
+	/**
+	 * Is one of the endpoints of this connection a port?
+	 */
 	boolean hasport = false;
+	
+	/**
+	 * Does this connection require a wire? (currently unused)
+	 */
 	boolean haswire = true;
 
+	/**
+	 * Highest level node where this connection is visible
+	 */
 	Bloxnode connbase = null;
+	
+	/**
+	 * Depth (number of levels) of the highest level node where this connection is visible
+	 */
 	int connbaselevel = 0;
 
+	/**
+	 * Start index for fanout
+	 */
 	int fanoutstart = -1;
 
+	/**
+	 * Constructor: empty connection
+	 * @param n name of this connection
+	 */
 	public Bloxconn(String n) {
 		name = n;
 	}
 
+	/**
+	 * Constructor: connection from JSON
+	 * @param o JSON object describinb this connection
+	 * @param b Block in which this this connection belongs
+	 * @throws BloxException
+	 */
 	public Bloxconn(JSONObject o, Bloxnode b) throws BloxException {
 		name = o.getString("name");
 		if (o.has("parameter")) {
@@ -76,6 +126,11 @@ public class Bloxconn {
 		}
 	}
 
+	/**
+	 * Add an endpoint to this connection
+	 * @param b The endpoint to add to this connection
+	 * @throws BloxException
+	 */
 	public void add(Bloxendpoint b) throws BloxException {
 		if (b == null) {
 			throw new BloxException("Not expecting null endpoint at " + this);
@@ -86,6 +141,9 @@ public class Bloxconn {
 		}
 	}
 
+	/**
+	 * Generate a string representation of this connection
+	 */
 	public String toString() {
 		String eps = " ";
 		if (endpoints.isEmpty()) {
@@ -104,6 +162,12 @@ public class Bloxconn {
 		return "connection " + name + eps;
 	}
 
+	/**
+	 * Determine the base level of this connection
+	 * @param parent the reference block from where to determine the base level
+	 * @return the highest level block in which this connection is visible
+	 * @throws BloxException
+	 */
 	public Bloxnode getBase(Bloxnode parent) throws BloxException {
 		connbaselevel = 0;
 		boolean done = false;
@@ -144,6 +208,12 @@ public class Bloxconn {
 		return connbase;
 	}
 
+	/**
+	 * Determines whether this connection is a local connection, i.e. whether this connection
+	 * only connects local ports and ports of instances (so no ports of deeper instances)
+	 * 
+	 * @return true if the connection is local
+	 */
 	public boolean isLocal() {
 		boolean islocal = true;
 		for (Bloxendpoint ep: endpoints) {
@@ -153,6 +223,10 @@ public class Bloxconn {
 		return islocal;	
 	}
 
+	/**
+	 * Determines whether this connection contains a local port
+	 * @return true if this connection contains a local port
+	 */
 	public boolean hasPort() {
 		hasport = false;
 		for (Bloxendpoint ep: endpoints) {
@@ -164,6 +238,10 @@ public class Bloxconn {
 		return hasport;
 	}
 
+	/**
+	 * Gets the local port of this connection if there is one, null otherwise.
+	 * @return the local port of this connection if there is one, null otherwise.
+	 */
 	public Bloxendpoint getPort() {
 		hasport = false;
 		for (Bloxendpoint ep: endpoints) {
@@ -175,6 +253,10 @@ public class Bloxconn {
 		return null;
 	}
 
+	/**
+	 * Determines whether this connection has a master endpoint
+	 * @return true if this connection has a master endpoint
+	 */
 	public boolean hasMaster() {
 		for (Bloxendpoint ep: endpoints) {
 			if (ep.isMaster()) return true;
@@ -182,6 +264,10 @@ public class Bloxconn {
 		return false;
 	}
 
+	/**
+	 * Returns the master endpoint of this connection if there is one, null otherwise
+	 * @return the master endpoint of this connection if there is one, null otherwise
+	 */
 	public Bloxendpoint getMaster() {
 		for (Bloxendpoint ep: endpoints) {
 			if (ep.isMaster()) return ep;
@@ -189,6 +275,14 @@ public class Bloxconn {
 		return null;
 	}
 
+	/**
+	 * Connects a localized connection to a port of its block for connecting it further
+	 * at the next higher hierarchical level of the design.
+	 * 
+	 * @param parent the parent node of this connection
+	 * @return the port of the current block which has become part of this connection
+	 * @throws BloxException
+	 */
 	public Bloxendpoint connectUp(Bloxnode parent) throws BloxException {
 		Bloxconn lconn = connect(parent, true);
 		Bloxendpoint ep = getPort();
@@ -226,6 +320,15 @@ public class Bloxconn {
 		return ep;
 	}
 
+	/**
+	 * Localizes the current connection. Calls connectUp to get ports of subblocks
+	 * to which this connection goes. 
+	 * 
+	 * @param parent the parent node of this connection
+	 * @param recursing should be set to false if called by the user; true when called from connectUp()
+	 * @return the localized connection (inside the parent node) derived from this connection
+	 * @throws BloxException
+	 */
 	public Bloxconn connect(Bloxnode parent, boolean recursing) throws BloxException {
 		Bloxconn localconn = null;
 		if (isLocal()) {
@@ -382,8 +485,11 @@ public class Bloxconn {
 		return f;
 	}
 
+	/**
+	 * Determines and returns the bus type of this connection
+	 * @return the bus type of this connection
+	 */
 	public Bloxbus getType() {
-		// TODO Auto-generated method stub
 		if (type == null && endpoints != null && !endpoints.isEmpty()) {
 			type = endpoints.get(0).port.type;
 		}
@@ -391,10 +497,17 @@ public class Bloxconn {
 		return type;
 	}
 
+	/**
+	 * Returns the parameter of this connection
+	 * @return the parameter of this connection, or nulll if the connection doesn't have a parameter
+	 */
 	public Mparameter getParameter() {
 		return parameter;
 	}
 
+	/**
+	 * Updates the connection in case a wrapper node was introduced
+	 */
 	public void wrap() {
 		for (Bloxendpoint ep: endpoints) {
 			ep.wrap();
