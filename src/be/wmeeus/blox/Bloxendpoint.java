@@ -373,6 +373,9 @@ public class Bloxendpoint {
 		return 1;
 	}
 
+	/**
+	 * Update the path of this endpoint when its node gets wrapped 
+	 */
 	public void wrap() {
 		if (ipath == null || ipath.isEmpty()) return;
 		Bloxnode en = ipath.get(0).node;

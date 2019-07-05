@@ -35,10 +35,23 @@ public class Bloxbusport {
 	 */
 	String type = null;
 	
-	
+	/**
+	 * Indicates that in case of fanout, this port becomes an array
+	 */
 	boolean fanout_array = false;
+	
+	/**
+	 * Indicates that in case of fanout, this port becomes a wire
+	 */
 	boolean fanout_wire = false;
 
+	/**
+	 * Constructs a bus port
+	 * @param n port (signal) name
+	 * @param m direction of master port
+	 * @param w width (number of bits)
+	 * @param p the bus in which this port belongs
+	 */
 	public Bloxbusport(String n, String m, int w, Bloxbus p) {
 		name = n;
 		master_dir = m;
@@ -46,6 +59,12 @@ public class Bloxbusport {
 		parent = p;
 	}
 
+	/**
+	 * Constructs a bus port from a JSON pobject
+	 * @param o the JSON object
+	 * @param b the bus in which this port belongs
+	 * @throws BloxException
+	 */
 	public Bloxbusport(JSONObject o, Bloxbus b) throws BloxException {
 		parent = b;
 		try {
@@ -77,6 +96,9 @@ public class Bloxbusport {
 		}
 	}
 
+	/**
+	 * Returns a String representation of this bus port
+	 */
 	public String toString() {
 		String r = name + ": " + master_dir + " " + type;
 		if (width > 1) {
@@ -85,6 +107,11 @@ public class Bloxbusport {
 		return r;
 	}
 
+	/**
+	 * Returns the port direction (in or out) according to the port use (master or slave)
+	 * @param b true for slave port, false for master port
+	 * @return the port direction
+	 */
 	public String enslave(boolean b) {
 		if (!b || parent.symmetric) return master_dir;
 		if (master_dir.equals("in")) return "out";
@@ -92,12 +119,21 @@ public class Bloxbusport {
 		return master_dir;
 	}
 
+	/**
+	 * Returns the port type
+	 * @return the port type
+	 */
 	public String getType() {
 		if (type != null) return type;
 		if (width > 1) return "vector";
 		return "wire";
 	}
 
+	/**
+	 * Returns the VHDL type corresponding with the port type
+	 * @return the VHDL type corresponding with the port type
+	 * @throws BloxException
+	 */
 	public VHDLtype getVHDLtype() throws BloxException {
 		try {
 			if (type != null) return VHDLtype.getType(type);
@@ -109,6 +145,13 @@ public class Bloxbusport {
 		}
 	}
 
+	/**
+	 * Returns a VHDL array type derived from this busport's type. The base VHDL type corresponds
+	 * with this busport's data type. The array size is given by a VHDL generic. 
+	 * @param pg the array size
+	 * @return the requested VHDL array type
+	 * @throws BloxException
+	 */
 	public VHDLtype getVHDLarrayType(VHDLgeneric pg) throws BloxException {
 		try {
 			if (type != null) return new VHDLarray(type + "_array", VHDLtype.getType(type), new VHDLrange(pg));

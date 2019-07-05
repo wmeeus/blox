@@ -990,18 +990,34 @@ public class Bloxnode extends Bloxelement implements Visitable {
 
 	}
 
+	/**
+	 * Determines whether this node is a "foreign" node i.e. whether the implementation is defined
+	 * outside of the Blox framework
+	 * @return true if this node is a "foreign" node.
+	 */
 	public boolean isForeign() {
 		return isforeign;
 	}
 
+	/**
+	 * Get the type of this node
+	 * @return the type of this node
+	 */
 	public String getType() {
 		return type;
 	}
 
+	/**
+	 * Gets the foreign node definition
+	 * @return the foreign node definition
+	 */
 	public String getForeign() {
 		return foreign;
 	}
 	
+	/**
+	 * Sets the design to which this node belongs
+	 */
 	public void setDesign(Bloxdesign bloxdesign) {
 		if (!(this instanceof Bloxdesign)) {
 			design = bloxdesign;
@@ -1012,14 +1028,27 @@ public class Bloxnode extends Bloxelement implements Visitable {
 		}
 	}
 
+	/**
+	 * Get the list of connections in this node
+	 * @return the list of connections in this node
+	 */
 	public ArrayList<Bloxconn> getConnections() {
 		return connections;
 	}
 
+	/**
+	 * Sets the list of connections in this node
+	 * @param connections the list of connections in this node
+	 */
 	public void setConnections(ArrayList<Bloxconn> connections) {
 		this.connections = connections;
 	}
 
+	/**
+	 * Rename this node. The new node name must be unique within the design
+	 * @param string the new name of this node.
+	 * @throws BloxException if the new name is not unique
+	 */
 	public void rename(String string) throws BloxException {
 		if (allnodes.containsKey(string))
 			throw new BloxException("Cannot rename " + name + " to " + string + ": name exists");
@@ -1028,10 +1057,18 @@ public class Bloxnode extends Bloxelement implements Visitable {
 		allnodes.put(string, this);
 	}
 
+	/**
+	 * Gets the list of ports os this design
+	 * @return the list of ports os this design
+	 */
 	public ArrayList<Bloxport> getPorts() {
 		return ports;
 	}
 
+	/**
+	 * Sets the list of ports os this design
+	 * @param p the list of ports os this design
+	 */
 	public void setPorts(ArrayList<Bloxport> p) {
 		ports = p;
 	}

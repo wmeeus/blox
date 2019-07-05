@@ -1,5 +1,11 @@
 package be.wmeeus.blox;
 
+/**
+ * Class ImplementForeign implements foreign nodes using the 
+ * Visitor design pattern
+ * @author Wim Meeus
+ *
+ */
 public class ImplementForeign implements Visitor {
 
 	public void visit(Bloxnode b) {

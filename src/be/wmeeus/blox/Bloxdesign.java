@@ -8,13 +8,32 @@ import org.json.*;
 
 import be.wmeeus.vhdl.*;
 
+/**
+ * Class Bloxdesign represents a design, which is an enhanced Bloxnode. A design may correspond
+ *  with e.g. a single JSON file.
+ * @author Wim Meeus
+ *
+ */
 public class Bloxdesign extends Bloxnode {
+	/**
+	 * A list of global connections in the design. 
+	 */
 	public Hashtable<String, BloxGlobalConn> globalconns = null;
 
+	/**
+	 * Create an empty design
+	 * @param n the design name
+	 * @throws BloxException
+	 */
 	public Bloxdesign(String n) throws BloxException {
 		super(n);
 	}
 
+	/**
+	 * Read a design from a JSON object
+	 * @param o the JSON object
+	 * @throws BloxException
+	 */
 	public Bloxdesign(JSONObject o) throws BloxException {
 		super(o);
 		if (o.has("clocks")) {
@@ -58,10 +77,19 @@ public class Bloxdesign extends Bloxnode {
 		}
 	}
 
+	/**
+	 * Returns a String representation of the design
+	 */
 	public String toString() {
 		return "design " + name;
 	}
 
+	/**
+	 * Reads a design from a file. JSON supported, text file support may be broken.
+	 * @param file the filename
+	 * @return the design
+	 * @throws BloxException
+	 */
 	public static Bloxdesign read(String file) throws BloxException {
 		if (file == null) 
 			throw new BloxException("NULL filename");
@@ -88,6 +116,11 @@ public class Bloxdesign extends Bloxnode {
 		return design;
 	}
 
+	/**
+	 * Main method: read a design from the file given as the first argument, make a VHDL 
+	 * model and print the internal representation of the design to stdout. 
+	 * @param args command line arguments. Only the first one is used as the name of the input file.
+	 */
 	public static void main(String[] args) {
 		Bloxdesign design = null;
 		try {
