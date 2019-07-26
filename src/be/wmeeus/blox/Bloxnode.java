@@ -23,32 +23,32 @@ public class Bloxnode extends Bloxelement implements Visitable {
 	 * List of instances in this node
 	 */
 	ArrayList<Bloxinst> children = new ArrayList<Bloxinst>();
-	
+
 	/**
 	 * List of ports of this node
 	 */
 	private ArrayList<Bloxport> ports = new ArrayList<Bloxport>();
-	
+
 	/**
 	 * List of "raw" connections in this node i.e. not localized, may span multiple hierarchical levels
 	 */
 	ArrayList<Bloxconn> connections = null;
-	
+
 	/**
 	 * List of "local" connections in this node, i.e. connections inside this node
 	 */
 	ArrayList<Bloxconn> localconnections = null;
-	
+
 	/**
 	 * Type indication of this node: hierarchy, functional, foreign ...
 	 */
 	String type = null;
-	
+
 	/**
 	 * List of all "foreign" nodes in the design
 	 */
 	static ArrayList<Bloxnode> foreignnodes = null;
-	
+
 	/**
 	 * List of all instances of this node in the design
 	 */
@@ -61,7 +61,7 @@ public class Bloxnode extends Bloxelement implements Visitable {
 	public void addParent(Bloxinst i) {
 		parents.add(i);
 	}
-	
+
 	/**
 	 * Returns the list of instances of this node
 	 * @return the list of instances of this node
@@ -69,7 +69,7 @@ public class Bloxnode extends Bloxelement implements Visitable {
 	public ArrayList<Bloxinst> getParents() {
 		return parents;
 	}
-	
+
 	/**
 	 * Returns the number of instances of this node in the design. An array of instances is counted as one.
 	 * @return the number of instances of this node in the design
@@ -110,7 +110,7 @@ public class Bloxnode extends Bloxelement implements Visitable {
 	 * A table of all nodes in the design
 	 */
 	static Hashtable<String, Bloxnode> allnodes = new Hashtable<String, Bloxnode>();
-	
+
 	/**
 	 * Returns a node with a particular name
 	 * @param s the name of the node to get
@@ -119,7 +119,7 @@ public class Bloxnode extends Bloxelement implements Visitable {
 	public static Bloxnode getNode(String s) {
 		return allnodes.get(s);
 	}
-	
+
 	/**
 	 * Returns the number of nodes in the design
 	 * @return the number of nodes in the design
@@ -177,7 +177,7 @@ public class Bloxnode extends Bloxelement implements Visitable {
 		}
 		return n;
 	}
-	
+
 	/**
 	 * Constructs a new node from a JSON object
 	 * @param o the JSON object which contains the node description
@@ -491,7 +491,7 @@ public class Bloxnode extends Bloxelement implements Visitable {
 		}
 
 	}
-	
+
 	/**
 	 * Returns a list of instances in this node
 	 * @return the list of instances in this node
@@ -608,7 +608,7 @@ public class Bloxnode extends Bloxelement implements Visitable {
 				if (pname.endsWith("_clk") && p.type != Bloxbus.WIRE) {
 					pname = pname.substring(0, pname.length() - 4);
 				}
-				
+
 				// TODO repeat vs. array
 				for (int i = 0; i < p.repeat; i++) {
 					String suffix = "";
@@ -622,10 +622,23 @@ public class Bloxnode extends Bloxelement implements Visitable {
 					} else {
 						for (Bloxbusport bp: p.type.ports) {
 							String bpname = ((bp.name.length()==0)?"":"_"+bp.name);
-							if (!p.isArrayport() || !bp.fanout_array) {
-								e.add(new VHDLport(pname + bpname + suffix, bp.enslave(isslave), bp.getVHDLtype()));
-							} else {
-								e.add(new VHDLport(pname + bpname + suffix, bp.enslave(isslave), bp.getVHDLarrayType(pg)));
+							for (int j = 0; j < (p.type.isRing()?2:1); j++) {
+								String ptname = pname + bpname + suffix;
+								boolean isslave_p = isslave;
+								if (p.type.isRing()) {
+									if (j == 0) {
+										ptname += "_up";
+										isslave_p = true;
+									} else {
+										ptname += "_dn";
+										isslave_p = false;
+									}
+								}
+								if (!p.isArrayport() || !bp.fanout_array) {
+									e.add(new VHDLport(ptname, bp.enslave(isslave_p), bp.getVHDLtype()));
+								} else {
+									e.add(new VHDLport(ptname, bp.enslave(isslave_p), bp.getVHDLarrayType(pg)));
+								}
 							}
 						}
 					}
@@ -683,7 +696,9 @@ public class Bloxnode extends Bloxelement implements Visitable {
 				}
 
 				if (conn.haswire) {
-					if (conn.getType().equals(Bloxbus.WIRE)) {
+					if (conn.getType().isRing()) {
+						vhdlConnectRing(a, instances, conn);
+					} else if (conn.getType().equals(Bloxbus.WIRE)) {
 						int j = 0;
 						if (pdom == null) {
 							vhdlConnectBusport(a, instances, conn, paramized, null, -1, -1, null);
@@ -719,6 +734,72 @@ public class Bloxnode extends Bloxelement implements Visitable {
 	}
 
 	/**
+	 * Connect a bus with a ring topology.
+	 * @param a the VHDL architecture
+	 * @param instances the list of instances to connect
+	 * @param conn the connection
+	 */
+	private void vhdlConnectRing(VHDLarchitecture a, Hashtable<Bloxnode, ArrayList<VHDLinstance>> instances,
+			Bloxconn conn) throws BloxException {
+		int segment = 0;
+		Bloxendpoint firstendpt = null;
+		Hashtable<Bloxbusport, VHDLsymbol> signals = new Hashtable<Bloxbusport, VHDLsymbol>();
+		try {
+			for (Bloxendpoint ep: conn.endpoints) {
+				if (firstendpt != null) {
+					// connect the downstream port from hashtable
+					for (Bloxbusport bp: ep.port.getType().ports) {
+						if (ep.isPort()) {
+							VHDLsymbol p = e.get(conn.getType().name + "_" + ep.port.name + "_up");
+							if (p == null) {
+								throw new BloxException("Port not found: on " + e + ":" + conn.getType().name + "_" + ep.port.name + "_up");
+							}
+							a.add(new VHDLassign(signals.get(bp), p));
+						} else {
+							instances.get(ep.getLast()).get(0).map(conn.getType().name + "_" + ep.port.name + "_dn", signals.get(bp));
+						}
+					}
+				} else {
+					firstendpt = ep;
+				}
+				// connect the upstream port
+				for (Bloxbusport bp: ep.port.getType().ports) {
+					if (ep.isPort()) {
+						VHDLsymbol p = e.get(conn.getType().name + "_" + ep.port.name + "_dn");
+						if (p == null) {
+							throw new BloxException("Port not found: on " + e + ":" + conn.getType().name + "_" + ep.port.name + "_up");
+						}
+						signals.put(bp,  p);
+					} else {
+						VHDLsignal s = new VHDLsignal(conn.name + "_" + bp.name + "_" + segment++, bp.getVHDLtype());
+						a.add(s);
+						instances.get(ep.getLast()).get(0).map(conn.getType().name + "_" + ep.port.name + "_up", s);
+						signals.put(bp, s);
+					}
+				}
+
+			}
+			// close the ring: connect the first downstream port
+			for (Bloxbusport bp: firstendpt.port.getType().ports) {
+				if (firstendpt.isPort()) {
+					VHDLsymbol p = e.get(conn.getType().name + "_" + firstendpt.port.name + "_up");
+					if (p == null) {
+						throw new BloxException("Port not found: on " + e + ":" + conn.getType().name + "_" + firstendpt.port.name + "_up");
+					}
+					a.add(new VHDLassign(signals.get(bp), p));
+				} else {
+					instances.get(firstendpt.getLast()).get(0).map(conn.getType().name + "_" + firstendpt.port.name + "_dn", signals.get(bp));
+				}
+			}
+
+		
+		} catch(VHDLexception ex) {
+			ex.printStackTrace();
+			throw new BloxException(ex.toString());
+		}
+	}
+
+	/**
 	 * Connect a port of a bus (all endpoints)
 	 * @param a
 	 * @param instances
@@ -737,7 +818,7 @@ public class Bloxnode extends Bloxelement implements Visitable {
 
 		String suffix = "";
 		boolean bp_fanout_array = false;
-		
+
 		// seq is sequence number (in domain values list) = always 0, 1, ...
 		// parseq is parameter value in current iteration
 		if (seq > -1) {
@@ -1014,7 +1095,7 @@ public class Bloxnode extends Bloxelement implements Visitable {
 	public String getForeign() {
 		return foreign;
 	}
-	
+
 	/**
 	 * Sets the design to which this node belongs
 	 */

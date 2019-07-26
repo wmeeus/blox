@@ -117,6 +117,9 @@ public class Bloxconn {
 				}
 			} else {
 				ept = b.findEndpoint(pn);
+				if (ept == null) {
+					throw new BloxException("Endpoint " + pn + " not found in " + b);
+				}
 			}
 
 			add(ept);
@@ -419,7 +422,9 @@ public class Bloxconn {
 
 		if (localconn.fanout() > 1 && type != null && !type.isSimple()) {
 			localconn.type = type;
-			localconn.insertInterface(parent);
+			if (!type.isRing()) {
+				localconn.insertInterface(parent);
+			}
 		}
 
 		return localconn;

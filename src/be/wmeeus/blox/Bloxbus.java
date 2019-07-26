@@ -50,6 +50,15 @@ public class Bloxbus {
 	}
 	
 	/**
+	 * Determines whether this bus has a ring topology
+	 * @return true if this bus has a ring topology
+	 */
+	public boolean isRing() {
+		if (topology == null) return false;
+		return topology.equals("ring");
+	}
+	
+	/**
 	 * A table with vector bus types of various widths
 	 */
 	private static Hashtable<Integer, Bloxbus> vectors = new Hashtable<Integer, Bloxbus>(); 
