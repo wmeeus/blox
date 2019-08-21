@@ -41,6 +41,11 @@ public class Bloxbus {
 	 */
 	String topology = null;
 	
+	int vectorwidth = 1;
+	public int getVectorWidth() {
+		return vectorwidth;
+	}
+	
 	/**
 	 * Determines whether this bus is simple (all signals follow the same direction)
 	 * @return true if this bus is simple
@@ -76,6 +81,13 @@ public class Bloxbus {
 	 * @throws BloxException
 	 */
 	public static Bloxbus get(String n) throws BloxException {
+		if (n.startsWith("vector(")) {
+			String nn = n.substring(7);
+			int pos = nn.indexOf(")");
+			if (pos > -1) nn = nn.substring(0, pos);
+			int len = Integer.parseInt(nn);
+			return VECTOR(len);
+		}
 		Bloxbus b = alltypes.get(n);
 		if (b!=null) return b;
 		return new Bloxbus(n);
@@ -129,6 +141,23 @@ public class Bloxbus {
 		ports = new ArrayList<Bloxbusport>();
 		ports.add(new Bloxbusport("", "out", n, this));
 		simple = true;
+		vectorwidth = n;
+	}
+	
+	/**
+	 * Indicates whether this bus is a vector
+	 * @return true if this bus is a vector
+	 */
+	public boolean isVector() {
+		return name.startsWith("vector");
+	}
+
+	/**
+	 * Indicates whether this bus is a wire
+	 * @return true if this bus is a wire
+	 */
+	public boolean isWire() {
+		return name.startsWith("wire");
 	}
 
 	/**
@@ -178,7 +207,7 @@ public class Bloxbus {
 					}
 				}
 			} catch (FileNotFoundException ex) {
-				System.out.println("*Warning* bus definition not found: " + n + ".json");
+				System.err.println("*Warning* bus definition not found: " + n + ".json");
 			}
 			alltypes.put(name, this);
 		}
@@ -190,7 +219,7 @@ public class Bloxbus {
 	public String toString() {
 		String r = "bus " + name + "(";
 		boolean first = true;
-		for (Bloxbusport p: ports) {
+		if (ports!=null) for (Bloxbusport p: ports) {
 			if (!first) r += ",";
 			r += p.toString();
 			first = false;

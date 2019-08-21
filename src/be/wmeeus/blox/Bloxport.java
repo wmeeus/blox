@@ -63,13 +63,23 @@ public class Bloxport extends Bloxelement {
 		parent = n;
 		try {
 			if (o.has("type")) {
-				type = Bloxbus.get(o.getString("type"));
+				String t = o.getString("type");
+				if ((t.equals("vector") || t.equals("wire")) && o.has("width")) {
+					t = "vector(" + o.getInt("width") + ")";
+				}
+				type = Bloxbus.get(t);
 				if (type == Bloxbus.CLKRST) {
 					if (name.endsWith("clk")) {
 						name = name.substring(0, name.length() - 3);
 					}
 					if (name.endsWith("_")) {
 						name = name.substring(0, name.length() - 1);
+					}
+					if (name.startsWith("clk")) {
+						name = name.substring(3);
+					}
+					if (name.startsWith("_")) {
+						name = name.substring(1);
 					}
 				}
 			}

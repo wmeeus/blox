@@ -95,6 +95,11 @@ public class Bloxinst extends Bloxelement {
 			if (o.has("repeat")) {
 				repeat = o.getInt("repeat");
 			}
+			if (o.has("connectsTo")) {
+				JSONArray ca = o.getJSONArray("connectsTo");
+				// store the array for now, we'll need a 2nd pass to build the actual connections
+				uput("connectsTo", ca);
+			}
 		} catch (JSONException ex) {
 			ex.printStackTrace();
 			throw new BloxException(ex.toString());
@@ -205,7 +210,7 @@ public class Bloxinst extends Bloxelement {
 			ln = ln.substring(0, sep);
 		}
 
-		if (node.name.equals(ln)) {
+		if (name.equals(ln) || node.name.equals(ln)) {
 			Bloxendpoint ept = node.findEndpoint(dp);
 			if (ept == null) {
 				throw new BloxException("Not expecting null endpoint at " + toString());

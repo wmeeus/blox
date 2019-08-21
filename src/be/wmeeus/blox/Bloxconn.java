@@ -70,7 +70,7 @@ public class Bloxconn {
 
 	/**
 	 * Constructor: connection from JSON
-	 * @param o JSON object describinb this connection
+	 * @param o JSON object describing this connection
 	 * @param b Block in which this this connection belongs
 	 * @throws BloxException
 	 */

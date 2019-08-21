@@ -60,7 +60,7 @@ public class Bloxbusport {
 	}
 
 	/**
-	 * Constructs a bus port from a JSON pobject
+	 * Constructs a bus port from a JSON object
 	 * @param o the JSON object
 	 * @param b the bus in which this port belongs
 	 * @throws BloxException
@@ -136,8 +136,12 @@ public class Bloxbusport {
 	 */
 	public VHDLtype getVHDLtype() throws BloxException {
 		try {
-			if (type != null) return VHDLtype.getType(type);
-			if (width > 1) return VHDLstd_logic_vector.getVector(width);
+			if (type != null && !type.equals("wire") && !type.equals("vector")) {
+				return VHDLtype.getType(type);
+			}
+			if (width > 1) {
+				return VHDLstd_logic_vector.getVector(width);
+			}
 			return VHDLstd_logic.STD_LOGIC;
 		} catch (VHDLexception ex) {
 			ex.printStackTrace();

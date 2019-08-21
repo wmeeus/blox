@@ -42,6 +42,12 @@ public class Bloxendpoint {
 	int fanout = 1;
 
 	/**
+	 * Indicates whether to connect to all instances of a node (then true) or to 
+	 * one particular instance only (when false) 
+	 */
+	boolean connectnode = false;
+	
+	/**
 	 * Construct an endpoint from a port
 	 * @param p
 	 */
@@ -69,6 +75,7 @@ public class Bloxendpoint {
 			ipath.add(n);
 			indices.add(ind);
 		}
+		connectnode = ep.connectnode;
 	}
 
 	/**
@@ -216,8 +223,11 @@ public class Bloxendpoint {
 			//				r += "(" + portidx + ")";
 			//			}
 			if (portindex != null) {
-				r += "(" + portindex + ")";
+				r += "(" + portindex + "<" + portindex.getClass().getName() + ">)";
 			}
+			if (port.type != null) {
+				r += "<" + port.type + ">";
+			} else r += "<notype>";
 			if (fanout > 1) {
 				r += "(f=" + fanout + ")";
 			}
@@ -396,5 +406,24 @@ public class Bloxendpoint {
 			}
 		}
 
+	}
+	
+	/**
+	 * Sets the flag whether this endpoint represents all instances of a node (when true) or
+	 * only one particular instance (when false)
+	 * @param c true if this endpoint represents all instances of a node, false if only one
+	 *   particular instance is represented
+	 */
+	void setConnectNode(boolean c) {
+		connectnode = c;
+	}
+
+	/**
+	 * Indicates whether this endpoint represents all instances of a node (true) or
+	 *   only one particular instance (false)
+	 * @return true if all instances, false if one instance
+	 */
+	boolean getConnectNode() {
+		return connectnode;
 	}
 }
