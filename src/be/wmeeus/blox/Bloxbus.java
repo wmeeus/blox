@@ -301,4 +301,12 @@ public class Bloxbus {
 	public String getVHDLpackage() {
 		return vhdlpackage;
 	}
+	
+	Bloxbusport getPort(String n) {
+		if (ports == null) return null;
+		for (Bloxbusport p: ports) {
+			if (p.name.equals(n)) return p;
+		}
+		return null;
+	}
 }

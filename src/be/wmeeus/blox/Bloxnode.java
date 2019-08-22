@@ -575,6 +575,8 @@ public class Bloxnode extends Bloxelement implements Visitable {
 		return ve;
 	}
 
+	private Hashtable<Bloxinst, VHDLinstance> insttt = null;  
+
 	/**
 	 * Generate a VHDL entity from this node
 	 * @return the VHDL entity
@@ -662,11 +664,13 @@ public class Bloxnode extends Bloxelement implements Visitable {
 			Hashtable<Bloxnode, ArrayList<VHDLinstance> > instances = new Hashtable<Bloxnode, ArrayList<VHDLinstance> >();
 			ArrayList<Integer> ldom = null;
 
+			insttt = new Hashtable<Bloxinst, VHDLinstance>();  
 			for (Bloxinst inst: children) {
 				VHDLentity ee = inst.node.vhdl();
 				for (int i = 0; i < inst.repeat; i++) {
 					VHDLinstance vi = new VHDLinstance(inst.name + ((inst.repeat < 2)?"":("_"+i)), ee);
 					a.add(vi);
+					insttt.put(inst, vi);
 					if (instances.containsKey(inst.node)) {
 						instances.get(inst.node).add(vi);
 					} else {
@@ -732,6 +736,20 @@ public class Bloxnode extends Bloxelement implements Visitable {
 				}
 			}
 
+			for (Bloxinst bi: children) {
+				if (bi.json != null && bi.json.has("strap")) {
+					JSONArray ca = bi.json.getJSONArray("strap");
+					for (Object co: ca) {
+						if (co instanceof JSONObject) {
+							JSONObject strp = (JSONObject)co;
+							strap(bi, strp);
+						} else {
+							System.err.println("Strap: skipping object of class " + co.getClass().getName());
+						}
+					}
+				}
+			}
+
 		} catch(VHDLexception ex) {
 			ex.printStackTrace();
 			throw new BloxException(ex.toString());
@@ -745,6 +763,54 @@ public class Bloxnode extends Bloxelement implements Visitable {
 			throw new BloxException(ex.toString());
 		}
 		return e;
+	}
+
+	void strap(Bloxinst inst, JSONObject o) throws BloxException {
+		if (o == null) return;
+		if ((!o.has("port") || (!o.has("value")))) {
+			throw new BloxException("strap: expecting port and value, got " + o);
+		}
+		String p = o.getString("port");
+		// TODO support port and subport index
+		String subport = null;
+		if (p.contains(":")) {
+			int pp = p.indexOf(":");
+			subport = p.substring(pp+1);
+			p = p.substring(0, pp);
+		}
+		// the port can either be a simple-enough blox port or a VHDL port
+		Bloxport bp = inst.node.getPort(p);
+		if (bp == null) {
+			throw new BloxException("Strap: " + o + " : port not found in node " + inst.node.name);
+		}
+		Bloxbus t = bp.getType();
+		VHDLtype vtype = null;
+		if (subport != null) {
+			// check for existence of subport
+			Bloxbusport bbp = t.getPort(subport);
+			if (bbp == null) {
+				throw new BloxException("Strap: " + o + " : port signal not found in port " + t.name);
+			}
+			vtype = bbp.getVHDLtype();
+		} else {
+			// check that the port contains exactly 1 signal
+			if (t.ports == null || t.ports.size() != 1) {
+				throw new BloxException("Strap: " + o + " : only one port signal allowed");
+			}
+			vtype = t.ports.get(0).getVHDLtype();
+		}
+		String jv = o.getString("value");
+		VHDLnode vv = null;
+		try {
+			vv = vtype.mkValue(jv);
+		} catch(VHDLexception ex) {
+			ex.printStackTrace();
+			throw new BloxException(ex.toString());
+		}
+		// TODO compose full port name
+		String pname = p;
+		if (subport != null) pname += "_" + subport;
+		insttt.get(inst).map(pname, vv);
 	}
 
 	/**
