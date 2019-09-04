@@ -179,6 +179,8 @@ public class Bloxnode extends Bloxelement implements Visitable {
 		return n;
 	}
 
+	Hashtable<String, Bloxconstant> constants = null;
+
 	/**
 	 * Constructs a new node from a JSON object
 	 * @param o the JSON object which contains the node description
@@ -188,6 +190,16 @@ public class Bloxnode extends Bloxelement implements Visitable {
 		super(o);
 		try {
 			allnodes.put(name, this);
+
+			if (o.has("constants")) {
+				JSONArray ca = o.getJSONArray("constants");
+				if (constants == null) constants = new Hashtable<String, Bloxconstant>();
+				for (Object co: ca) {
+					Bloxconstant cst = new Bloxconstant(co);
+					constants.put(cst.name, cst);
+				}
+				//				System.out.println("Constants in node " + name + ": " + constants);
+			}
 
 			if (o.has("children")) {
 				JSONArray ca = o.getJSONArray("children");
@@ -585,10 +597,6 @@ public class Bloxnode extends Bloxelement implements Visitable {
 	public VHDLentity vhdl() throws BloxException {
 		System.out.println("*Bloxnode::vhdl* node: " + name);
 
-		if (name.equals("prep")) {
-			System.err.println(this);
-		}
-
 		if (e!=null) {
 			System.err.println("**already generated**");
 			return e;
@@ -598,7 +606,7 @@ public class Bloxnode extends Bloxelement implements Visitable {
 			VHDLarchitecture a = new VHDLarchitecture("netlist", e); 
 
 			for (Bloxport p: ports) {
-				System.err.println("  " + p + " " + (p!=null?p.repeat:""));
+				//				System.err.println("  " + p + " " + (p!=null?p.repeat:""));
 				if (p == null) {
 					System.err.println("NULL port in " + toString());
 					continue;
@@ -767,8 +775,8 @@ public class Bloxnode extends Bloxelement implements Visitable {
 
 	void strap(Bloxinst inst, JSONObject o) throws BloxException {
 		if (o == null) return;
-		if ((!o.has("port") || (!o.has("value")))) {
-			throw new BloxException("strap: expecting port and value, got " + o);
+		if ((!o.has("port") || (!o.has("value") && !o.has("const")))) {
+			throw new BloxException("strap: expecting port and value or const, got " + o);
 		}
 		String p = o.getString("port");
 		// TODO support port and subport index
@@ -799,18 +807,31 @@ public class Bloxnode extends Bloxelement implements Visitable {
 			}
 			vtype = t.ports.get(0).getVHDLtype();
 		}
-		String jv = o.getString("value");
 		VHDLnode vv = null;
-		try {
-			vv = vtype.mkValue(jv);
-		} catch(VHDLexception ex) {
-			ex.printStackTrace();
-			throw new BloxException(ex.toString());
+		if (o.has("value")) {
+			String jv = o.getString("value");
+			try {
+				vv = vtype.mkValue(jv);
+			} catch(VHDLexception ex) {
+				ex.printStackTrace();
+				throw new BloxException(ex.toString());
+			}
+		} else if (o.has("const")) {
+			String cc = o.getString("const");
+			vv = new VHDLconstant(cc); // TODO pick up earlier defined constant!
 		}
+
 		// TODO compose full port name
 		String pname = p;
 		if (subport != null) pname += "_" + subport;
 		insttt.get(inst).map(pname, vv);
+	}
+
+	private VHDLinstance findVHDLinst(ArrayList<VHDLinstance> ai, String n) {
+		for (VHDLinstance i: ai) {
+			if (n.equals(i.getName())) return i;
+		}
+		return null;
 	}
 
 	/**
@@ -826,6 +847,16 @@ public class Bloxnode extends Bloxelement implements Visitable {
 		Hashtable<Bloxbusport, VHDLsymbol> signals = new Hashtable<Bloxbusport, VHDLsymbol>();
 		try {
 			for (Bloxendpoint ep: conn.endpoints) {
+				VHDLinstance inst = null;
+				if (!ep.isPort()) {
+					inst = findVHDLinst(instances.get(ep.getLast()), ep.getLastInst().name);
+					if (inst == null) {
+						System.err.println("Connect ring: instance not found: " + ep.getLastInst().name + " in " + instances);
+						continue;
+					}
+					System.out.println("VCR: endpoint " + ep + " inst " + inst.getName());
+				}
+
 				if (firstendpt != null) {
 					// connect the downstream port from hashtable
 					for (Bloxbusport bp: ep.port.getType().ports) {
@@ -836,7 +867,7 @@ public class Bloxnode extends Bloxelement implements Visitable {
 							}
 							a.add(new VHDLassign(signals.get(bp), p));
 						} else {
-							instances.get(ep.getLast()).get(0).map(conn.getType().name + "_" + ep.port.name + "_dn", signals.get(bp));
+							inst.map(conn.getType().name + "_" + ep.port.name + "_dn", signals.get(bp));
 						}
 					}
 				} else {
@@ -853,7 +884,7 @@ public class Bloxnode extends Bloxelement implements Visitable {
 					} else {
 						VHDLsignal s = new VHDLsignal(conn.name + "_" + bp.name + "_" + segment++, bp.getVHDLtype());
 						a.add(s);
-						instances.get(ep.getLast()).get(0).map(conn.getType().name + "_" + ep.port.name + "_up", s);
+						inst.map(conn.getType().name + "_" + ep.port.name + "_up", s);
 						signals.put(bp, s);
 					}
 				}
@@ -971,7 +1002,7 @@ public class Bloxnode extends Bloxelement implements Visitable {
 						VHDLstd_logic.STD_LOGIC); // TODO std_logic_vector support
 			}
 			a.add(bs);
-			System.err.println("VCBP3: bs = " + bs);
+			//			System.err.println("VCBP3: bs = " + bs);
 		}
 
 		for (Bloxendpoint ep: conn.endpoints) {
@@ -1029,7 +1060,7 @@ public class Bloxnode extends Bloxelement implements Visitable {
 			}
 
 			if (ep.isPort()) {
-				System.err.println("Connect port: " + ep);
+				//				System.err.println("Connect port: " + ep);
 				VHDLsymbol vp = e.get(ep.port.getVHDLname() + (bp!=null?("_" + bp.name):"") + suffix);
 				if (vp != null) {
 					if (vp instanceof VHDLport) {
