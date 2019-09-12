@@ -867,7 +867,9 @@ public class Bloxnode extends Bloxelement implements Visitable {
 							}
 							a.add(new VHDLassign(signals.get(bp), p));
 						} else {
-							inst.map(conn.getType().name + "_" + ep.port.name + "_dn", signals.get(bp));
+							String pname = conn.getType().name + "_" + ep.port.name + "_dn";
+							pname = ep.getLastInst().node.maprename(pname);
+							inst.map(pname, signals.get(bp));
 						}
 					}
 				} else {
@@ -884,7 +886,9 @@ public class Bloxnode extends Bloxelement implements Visitable {
 					} else {
 						VHDLsignal s = new VHDLsignal(conn.name + "_" + bp.name + "_" + segment++, bp.getVHDLtype());
 						a.add(s);
-						inst.map(conn.getType().name + "_" + ep.port.name + "_up", s);
+						String pname = conn.getType().name + "_" + ep.port.name + "_up";
+						pname = ep.getLastInst().node.maprename(pname);
+						inst.map(pname, s);
 						signals.put(bp, s);
 					}
 				}
@@ -899,7 +903,9 @@ public class Bloxnode extends Bloxelement implements Visitable {
 					}
 					a.add(new VHDLassign(signals.get(bp), p));
 				} else {
-					instances.get(firstendpt.getLast()).get(0).map(conn.getType().name + "_" + firstendpt.port.name + "_dn", signals.get(bp));
+					String pname = conn.getType().name + "_" + firstendpt.port.name + "_dn";
+					pname = firstendpt.getLastInst().node.maprename(pname);
+					instances.get(firstendpt.getLast()).get(0).map(pname, signals.get(bp));
 				}
 			}
 
@@ -908,6 +914,25 @@ public class Bloxnode extends Bloxelement implements Visitable {
 			ex.printStackTrace();
 			throw new BloxException(ex.toString());
 		}
+	}
+
+	Hashtable<String, String> renametable = null;
+	
+	public String maprename(String pname) throws BloxException {
+		if (renametable == null) {
+			if (!json.has("rename")) return pname;
+			renametable = new Hashtable<String, String>();
+			JSONArray ca = json.getJSONArray("rename");
+			for (Object co: ca) {
+				String cs = (String)co;
+				int idx = cs.indexOf("=");
+				if (idx < 1) throw new BloxException("Node " + name + ": illegal translation table entry " + cs);
+				renametable.put(cs.substring(0, idx), cs.substring(idx+1));
+			}
+			//System.out.println("Node " + name + ": translation table " + renametable);
+		}
+		if (renametable != null && renametable.containsKey(pname)) return renametable.get(pname);
+		return pname;
 	}
 
 	/**
@@ -1083,7 +1108,7 @@ public class Bloxnode extends Bloxelement implements Visitable {
 				}
 
 			} else { // ep is instance:port or node:port
-				System.err.println("VCSBP: connect instance " + ep);
+//				System.err.println("VCSBP: connect instance " + ep);
 				int iseq = 0;
 				if (seq != -1) {
 					if (ep.getLastIndex() != null) {
