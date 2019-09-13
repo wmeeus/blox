@@ -848,51 +848,63 @@ public class Bloxnode extends Bloxelement implements Visitable {
 		try {
 			for (Bloxendpoint ep: conn.endpoints) {
 				VHDLinstance inst = null;
+				Bloxinst bloxinst = null;
 				if (!ep.isPort()) {
-					inst = findVHDLinst(instances.get(ep.getLast()), ep.getLastInst().name);
-					if (inst == null) {
-						System.err.println("Connect ring: instance not found: " + ep.getLastInst().name + " in " + instances);
-						continue;
-					}
-					System.out.println("VCR: endpoint " + ep + " inst " + inst.getName());
-				}
+					// endpoint is an instance
+					bloxinst = ep.getLastInst();
+					for (int i = 0; i < bloxinst.repeat; i++) {
 
-				if (firstendpt != null) {
-					// connect the downstream port from hashtable
+						inst = findVHDLinst(instances.get(ep.getLast()), ep.getLastInst().name 
+								+ ((bloxinst.repeat > 1)?"_"+i:""));
+
+						if (inst == null) {
+							System.err.println("Connect ring: instance not found: " + ep.getLastInst().name + " in " + instances);
+							continue;
+						}
+
+						System.out.println("VCR: endpoint " + ep + " inst " + inst.getName());
+						for (Bloxbusport bp: ep.port.getType().ports) {
+							if (firstendpt != null) {
+								String pname = conn.getType().name + "_" + ep.port.name + "_dn";
+								pname = ep.getLastInst().node.maprename(pname);
+								inst.map(pname, signals.get(bp));
+							}
+
+							VHDLsignal s = new VHDLsignal(conn.name + "_" + bp.name + "_" + segment++, bp.getVHDLtype());
+							a.add(s);
+							String pname = conn.getType().name + "_" + ep.port.name + "_up";
+							pname = ep.getLastInst().node.maprename(pname);
+							inst.map(pname, s);
+							signals.put(bp, s);
+
+						}
+
+					}
+
+				} else {
+					// endpoint is a port of this node
 					for (Bloxbusport bp: ep.port.getType().ports) {
-						if (ep.isPort()) {
+						if (firstendpt != null) {
+							// connect the downstream port from hashtable
 							VHDLsymbol p = e.get(conn.getType().name + "_" + ep.port.name + "_up");
 							if (p == null) {
 								throw new BloxException("Port not found: on " + e + ":" + conn.getType().name + "_" + ep.port.name + "_up");
 							}
 							a.add(new VHDLassign(signals.get(bp), p));
-						} else {
-							String pname = conn.getType().name + "_" + ep.port.name + "_dn";
-							pname = ep.getLastInst().node.maprename(pname);
-							inst.map(pname, signals.get(bp));
-						}
-					}
-				} else {
-					firstendpt = ep;
-				}
-				// connect the upstream port
-				for (Bloxbusport bp: ep.port.getType().ports) {
-					if (ep.isPort()) {
+
+						}	
+						// connect the upstream port
 						VHDLsymbol p = e.get(conn.getType().name + "_" + ep.port.name + "_dn");
 						if (p == null) {
 							throw new BloxException("Port not found: on " + e + ":" + conn.getType().name + "_" + ep.port.name + "_up");
 						}
 						signals.put(bp,  p);
-					} else {
-						VHDLsignal s = new VHDLsignal(conn.name + "_" + bp.name + "_" + segment++, bp.getVHDLtype());
-						a.add(s);
-						String pname = conn.getType().name + "_" + ep.port.name + "_up";
-						pname = ep.getLastInst().node.maprename(pname);
-						inst.map(pname, s);
-						signals.put(bp, s);
 					}
 				}
 
+				if (firstendpt == null) {
+					firstendpt = ep;
+				}
 			}
 			// close the ring: connect the first downstream port
 			for (Bloxbusport bp: firstendpt.port.getType().ports) {
@@ -917,7 +929,7 @@ public class Bloxnode extends Bloxelement implements Visitable {
 	}
 
 	Hashtable<String, String> renametable = null;
-	
+
 	public String maprename(String pname) throws BloxException {
 		if (renametable == null) {
 			if (!json.has("rename")) return pname;
@@ -1108,7 +1120,6 @@ public class Bloxnode extends Bloxelement implements Visitable {
 				}
 
 			} else { // ep is instance:port or node:port
-//				System.err.println("VCSBP: connect instance " + ep);
 				int iseq = 0;
 				if (seq != -1) {
 					if (ep.getLastIndex() != null) {
