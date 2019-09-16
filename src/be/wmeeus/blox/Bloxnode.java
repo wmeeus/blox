@@ -862,7 +862,7 @@ public class Bloxnode extends Bloxelement implements Visitable {
 							continue;
 						}
 
-						System.out.println("VCR: endpoint " + ep + " inst " + inst.getName());
+//						System.out.println("VCR: endpoint " + ep + " inst " + inst.getName());
 						for (Bloxbusport bp: ep.port.getType().ports) {
 							if (firstendpt != null) {
 								String pname = conn.getType().name + "_" + ep.port.name + "_dn";
