@@ -974,6 +974,31 @@ public class Bloxnode extends Bloxelement implements Visitable {
 		}
 
 		VHDLsignal bs = null;
+
+		boolean needsignal = conn.needsSignal();
+		if (!needsignal) {
+			System.out.println("*VCBP* signal could be avoided for " + conn);
+			Bloxendpoint ept = conn.getPort();
+			System.out.println("       port: " + ept);
+			VHDLsymbol vp = e.get(ept.port.getVHDLname() + (bp!=null?("_" + bp.name):"") + suffix);
+			if (vp != null) {
+				for (Bloxendpoint ep: conn.endpoints) {
+					if (!ep.isPort()) {
+						if (ep.isMaster() || !bp_fanout_array || !(vp.getType() instanceof VHDLarray)) { 
+							vhdlConnectSingleBusport(a, instances, conn, paramized, bp, parseq, seq, 
+									ldom, ep, vp, conn.fanoutstart, suffix);
+						} else {
+							vhdlConnectSingleBusport(a, instances, conn, paramized, bp, parseq, seq, 
+									ldom, ep, vp, conn.fanoutstart, suffix);
+						}
+					}
+				}
+				return;
+			} else {
+				throw new BloxException("Connect without intermediate signal: port not found: " + ept);
+			}
+		}
+
 		Bloxendpoint epm = conn.getMaster();
 		if (bp != null) {
 			bp_fanout_array = bp.fanout_array;

@@ -142,6 +142,9 @@ public class Bloxconn {
 		if (!endpoints.contains(b)) {
 			endpoints.add(b);
 		}
+		if (b.isPort()) {
+			hasport = true;
+		}
 	}
 
 	/**
@@ -301,8 +304,8 @@ public class Bloxconn {
 				parent.addPort(p);
 			}
 			ep = new Bloxendpoint(p);
-			if (lconn != this) endpoints.add(ep); // WHY?
-			lconn.endpoints.add(ep);
+			if (lconn != this) add(ep); // WHY?
+			lconn.add(ep);
 			//ep.portindex = endpoints.get(0).getLastIndex();
 			// some wild attempt...
 			Mnode epx = endpoints.get(0).anyIndex();
@@ -519,4 +522,14 @@ public class Bloxconn {
 		}
 	}
 
+	public boolean needsSignal() {
+		// no signal is needed if at least one endpoint is a port AND if
+		//  EITHER the fanout is 1 i.e. the port and one instance connection
+		//  OR the connection is "simple" i.e. doesn't require connectors
+		if (this.hasport && (type.simple || this.fanout()<=1)) {
+			return false;
+		}
+		return true;
+	}
+	
 }
