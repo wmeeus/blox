@@ -587,7 +587,7 @@ public class Bloxnode extends Bloxelement implements Visitable {
 		return ve;
 	}
 
-	private Hashtable<Bloxinst, VHDLinstance> insttt = null;  
+	private Hashtable<Bloxinst, ArrayList<VHDLinstance> > insttt = null;  
 
 	/**
 	 * Generate a VHDL entity from this node
@@ -672,13 +672,15 @@ public class Bloxnode extends Bloxelement implements Visitable {
 			Hashtable<Bloxnode, ArrayList<VHDLinstance> > instances = new Hashtable<Bloxnode, ArrayList<VHDLinstance> >();
 			ArrayList<Integer> ldom = null;
 
-			insttt = new Hashtable<Bloxinst, VHDLinstance>();  
+			insttt = new Hashtable<Bloxinst, ArrayList<VHDLinstance> >();  
 			for (Bloxinst inst: children) {
 				VHDLentity ee = inst.node.vhdl();
+				ArrayList<VHDLinstance> ttlist = new ArrayList<VHDLinstance>();
+				insttt.put(inst,  ttlist);
 				for (int i = 0; i < inst.repeat; i++) {
 					VHDLinstance vi = new VHDLinstance(inst.name + ((inst.repeat < 2)?"":("_"+i)), ee);
 					a.add(vi);
-					insttt.put(inst, vi);
+					ttlist.add(vi);
 					if (instances.containsKey(inst.node)) {
 						instances.get(inst.node).add(vi);
 					} else {
@@ -774,6 +776,8 @@ public class Bloxnode extends Bloxelement implements Visitable {
 	}
 
 	void strap(Bloxinst inst, JSONObject o) throws BloxException {
+		System.out.println("*strap* " + inst + " :: " + o);
+		
 		if (o == null) return;
 		if ((!o.has("port") || (!o.has("value") && !o.has("const")))) {
 			throw new BloxException("strap: expecting port and value or const, got " + o);
@@ -817,6 +821,7 @@ public class Bloxnode extends Bloxelement implements Visitable {
 				throw new BloxException(ex.toString());
 			}
 		} else if (o.has("const")) {
+			// named constant
 			String cc = o.getString("const");
 			vv = new VHDLconstant(cc); // TODO pick up earlier defined constant!
 		}
@@ -824,7 +829,9 @@ public class Bloxnode extends Bloxelement implements Visitable {
 		// TODO compose full port name
 		String pname = p;
 		if (subport != null) pname += "_" + subport;
-		insttt.get(inst).map(pname, vv);
+		for (VHDLinstance vi: insttt.get(inst)) {
+			vi.map(pname, vv);
+		}
 	}
 
 	private VHDLinstance findVHDLinst(ArrayList<VHDLinstance> ai, String n) {
@@ -977,9 +984,7 @@ public class Bloxnode extends Bloxelement implements Visitable {
 
 		boolean needsignal = conn.needsSignal();
 		if (!needsignal) {
-			System.out.println("*VCBP* signal could be avoided for " + conn);
 			Bloxendpoint ept = conn.getPort();
-			System.out.println("       port: " + ept);
 			VHDLsymbol vp = e.get(ept.port.getVHDLname() + (bp!=null?("_" + bp.name):"") + suffix);
 			if (vp != null) {
 				for (Bloxendpoint ep: conn.endpoints) {
