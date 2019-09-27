@@ -777,7 +777,7 @@ public class Bloxnode extends Bloxelement implements Visitable {
 
 	void strap(Bloxinst inst, JSONObject o) throws BloxException {
 		System.out.println("*strap* " + inst + " :: " + o);
-		
+
 		if (o == null) return;
 		if ((!o.has("port") || (!o.has("value") && !o.has("const")))) {
 			throw new BloxException("strap: expecting port and value or const, got " + o);
@@ -812,10 +812,20 @@ public class Bloxnode extends Bloxelement implements Visitable {
 			vtype = t.ports.get(0).getVHDLtype();
 		}
 		VHDLnode vv = null;
+		boolean isrepeat = false; // TODO extend to support expressions
 		if (o.has("value")) {
 			String jv = o.getString("value");
 			try {
-				vv = vtype.mkValue(jv);
+				if (jv.startsWith("param")) {
+					String pv = jv.substring(jv.indexOf(":") + 1);
+					if (pv.equals("repeat")) {
+						isrepeat = true;
+					} else {
+						throw new BloxException("Strap: parameter not supported: " + jv);
+					}
+				} else {
+					vv = vtype.mkValue(jv);
+				}
 			} catch(VHDLexception ex) {
 				ex.printStackTrace();
 				throw new BloxException(ex.toString());
@@ -829,8 +839,16 @@ public class Bloxnode extends Bloxelement implements Visitable {
 		// TODO compose full port name
 		String pname = p;
 		if (subport != null) pname += "_" + subport;
-		for (VHDLinstance vi: insttt.get(inst)) {
-			vi.map(pname, vv);
+		int i = 0;
+		try {
+			for (VHDLinstance vi: insttt.get(inst)) {
+				if (isrepeat) {
+					vv = vtype.mkValue(i++);
+				}
+				vi.map(pname, vv);
+			}
+		} catch (VHDLexception ex) {
+			ex.printStackTrace();
 		}
 	}
 
