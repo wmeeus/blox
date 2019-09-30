@@ -554,7 +554,10 @@ public class Bloxnode extends Bloxelement implements Visitable {
 				pn = pn.substring(0, sep);
 			}
 			Bloxport p = getPort(pn);
-			if (p == null) throw new BloxException("Port " + pn + " not found at " + toString());
+			if (p == null) {
+				System.err.println(ports);
+				throw new BloxException("Port " + pn + " not found at " + toString());
+			}
 			Bloxendpoint ept = new Bloxendpoint(p);
 			try {
 				ept.portindex = new Mparser(idx).parse();
