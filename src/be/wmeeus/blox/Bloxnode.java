@@ -163,7 +163,13 @@ public class Bloxnode extends Bloxelement implements Visitable {
 				n = Bloxdesign.read(fn);
 				// TODO add information from current json object to node
 				// do we expect a design to have a useful json node??
-				n.json = o;
+				if (n.json == null) {
+					n.json = o;
+				} else {
+					for (String key: o.keySet()) {
+						n.json.put(key, o.get(key));
+					}
+				}
 				System.out.println("*mkBloxnode* json object " + o);
 			}
 			if (type.equals("defined")) {
@@ -238,15 +244,6 @@ public class Bloxnode extends Bloxelement implements Visitable {
 				slaveprefix = o.getString("slaveprefix");
 			}
 			if (o.has("connections")) {
-				JSONArray ca = o.getJSONArray("connections");
-				for (Object co: ca) {
-					if (co instanceof JSONObject) {
-						JSONObject chd = (JSONObject)co;
-						addConnection(new Bloxconn(chd, this));
-					} else {
-						System.err.println("Skipping object of class " + co.getClass().getName());
-					}
-				}
 			}
 			if (o.has("type")) {
 				type = o.getString("type");
@@ -1183,13 +1180,6 @@ public class Bloxnode extends Bloxelement implements Visitable {
 				}
 				ArrayList<VHDLinstance> insts = instances.get(ep.getLast());
 
-				String portsuffix = "";
-				if (ep.portindex != null) {
-					portsuffix = "_" + ep.portindex.eval(paramvalues);
-					if (ep.getLastIndex() == null) {
-						iseq = 0; // wild assumption!
-					}
-				}
 				String portprefix = "";
 				// master or slave?
 				Bloxnode cnode = ep.getLast();
@@ -1223,11 +1213,38 @@ public class Bloxnode extends Bloxelement implements Visitable {
 
 				String fullportname = null;
 				if (ep.port.getVHDLname().isEmpty() && portprefix.endsWith("_")) {
-					fullportname = portprefix.substring(0, portprefix.length() - 1) + ((bp==null||bp.name.length()==0)?"":("_" + bp.name)) + portsuffix;
+					fullportname = portprefix.substring(0, portprefix.length() - 1) + ((bp==null||bp.name.length()==0)?"":("_" + bp.name));
 				} else {
 					if (portbase.startsWith(portprefix)) portprefix = "";
-					fullportname = portprefix + portbase + ((bp==null||bp.name.length()==0)?"":("_" + bp.name)) + portsuffix;
+					fullportname = portprefix + portbase + ((bp==null||bp.name.length()==0)?"":("_" + bp.name));
 				}
+//				if (inst.)
+				
+				String portsuffix = "";
+				if (ep.portindex != null) {
+					portsuffix = "_" + ep.portindex.eval(paramvalues);
+					if (ep.getLastIndex() == null) {
+						iseq = 0; // wild assumption!
+					}
+				}
+
+				if (ep.port.getVHDLname().isEmpty() && portprefix.endsWith("_")) {
+					fullportname = portprefix.substring(0, portprefix.length() - 1) + ((bp==null||bp.name.length()==0)?"":("_" + bp.name));
+				} else {
+					if (portbase.startsWith(portprefix)) portprefix = "";
+					fullportname = portprefix + portbase + ((bp==null||bp.name.length()==0)?"":("_" + bp.name));
+				}
+				
+				// TODO figure out whether in index should be interpreted as a proper index or an expansion
+				//      i.e. pname(k) or pname_k
+				
+				VHDLinstance ii = insts.get(0);
+				if (portsuffix.length()>0 && ii.has(fullportname)) {
+					System.out.println("**VCSBP** found " + fullportname + " " + portsuffix + " in " + ii.getName());
+				} else {
+					fullportname += portsuffix;
+				}
+				
 				// does iseq refer to the instance or to the port? or both?
 				VHDLnode n = bs;
 				if (!paramized && insts.size() > 1) {
@@ -1366,6 +1383,32 @@ public class Bloxnode extends Bloxelement implements Visitable {
 	 */
 	public void setPorts(ArrayList<Bloxport> p) {
 		ports = p;
+	}
+
+	public void connectSignals() {
+		System.out.println("*Bloxnode::connectSignals* " + name);
+		
+		if (name.equals("iegress")) {
+			System.out.println(json);
+		}
+		
+		if (!json.has("connections")) return;
+		
+		JSONArray ca = json.getJSONArray("connections");
+		System.out.println("*Bloxnode::connectSignals* connections: " + ca);
+		for (Object co: ca) {
+			if (co instanceof JSONObject) {
+				JSONObject chd = (JSONObject)co;
+				try {
+					addConnection(new Bloxconn(chd, this));
+				} catch (BloxException ex) {
+					ex.printStackTrace();
+					System.exit(1);
+				}
+			} else {
+				System.err.println("Skipping object of class " + co.getClass().getName());
+			}
+		}
 	}
 
 }

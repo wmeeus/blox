@@ -165,7 +165,7 @@ public class Bloxconn {
 		if (parameter != null) {
 			eps = " [" + parameter.toString() + "]" + eps;
 		}
-		return "connection " + name + eps;
+		return "connection " + name + "(" + type.name + ")" + eps;
 	}
 
 	/**
@@ -494,7 +494,8 @@ public class Bloxconn {
 	}
 
 	/**
-	 * Determines and returns the bus type of this connection
+	 * Determines and returns the bus type of this connection. Bit greedy at the moment. 
+	 * Add the type to the JSON code if confusion could arise. 
 	 * @return the bus type of this connection
 	 */
 	public Bloxbus getType() {
