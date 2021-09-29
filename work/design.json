@@ -1,0 +1,20 @@
+{
+	"design": {
+		"name": "my_design",
+		"clocks": [
+			{
+				"name": "clk",
+				"has_reset": true,
+				"origin": ":clk"
+			}
+		],
+		"children": [
+			{
+				"name": "clockmanager",
+				"connectsTo": [
+					""
+				]
+			}
+		]
+	}
+}

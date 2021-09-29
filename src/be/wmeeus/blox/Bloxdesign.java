@@ -1,7 +1,6 @@
 package be.wmeeus.blox;
 
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.util.*;
 
 import org.json.*;
@@ -148,44 +147,49 @@ public class Bloxdesign extends Bloxnode {
 	 */
 	public void connectGlobals() {
 		// TODO in case of a subdesign, this might as well be a connection to the superdesign...
+		if (globalconns == null) return;
 		try {
-			for (BloxGlobalConn c: globalconns.values()) {
-				if (c.type == null) {
-					c.type = Bloxbus.WIRE; // TODO may not be right!!
+			for (BloxGlobalConn connection: globalconns.values()) {
+				if (connection.type == null) {
+					connection.type = Bloxbus.WIRE; // TODO best guess, may not be right!!
 				}
-				if (c.origin.startsWith(":")) {
-					String pn = c.origin.substring(1);
+				if (connection.origin == null) {
+					System.err.println("*warning* global connection " + connection.name + " has no origin");
+					continue;
+				}
+				if (connection.origin.startsWith(":")) { // origin is design (i.e. top level) port
+					String portname = connection.origin.substring(1);
 
-					Bloxport p = getPort(pn);
-					if (p == null) {
-						p = new Bloxport(pn, null, c.type, this);
-						p.direction = "in";
-						addPort(p);
+					Bloxport port = getPort(portname);
+					if (port == null) {
+						port = new Bloxport(portname, null, connection.type, this);
+						port.direction = "in";
+						addPort(port);
 					}
-					c.add(new Bloxendpoint(p));
-				} else {
-					String nna = c.origin;
-					String pna = null;
-					if (nna.contains(":")) {
-						int col = nna.indexOf(":");
-						pna = nna.substring(col+1);
-						nna = nna.substring(0, col);
+					connection.add(new Bloxendpoint(port));
+				} else { // origin is inside the design
+					String nodename = connection.origin;
+					String portname = null;
+					if (nodename.contains(":")) {
+						int col = nodename.indexOf(":");
+						portname = nodename.substring(col+1);
+						nodename = nodename.substring(0, col);
 					} else {
-						pna = c.name;
+						portname = connection.name;
 					}
-					Bloxendpoint ep = findEndBlock(nna); // contains path but not port
-					if (ep == null) {
-						System.err.println("*ERROR* connectGlobals: cannot find origin of " + nna + "::" + pna);
+					Bloxendpoint endpoint = findEndBlock(nodename); // contains path but not port
+					if (endpoint == null) {
+						System.err.println("*ERROR* connectGlobals: cannot find origin of " + nodename + "::" + portname);
 						System.exit(-1);
 					}
-					Bloxnode endnode = ep.get(0);
-					Bloxport p = endnode.getPort(pna);
-					if (p == null) {
-						p = new Bloxport(c.name, "master", c.type, endnode);
-						endnode.addPort(p);
+					Bloxnode endnode = endpoint.get(0);
+					Bloxport port = endnode.getPort(portname);
+					if (port == null) {
+						port = new Bloxport(connection.name, "master", connection.type, endnode);
+						endnode.addPort(port);
 					}
-					ep.setPort(p);
-					c.add(ep);
+					endpoint.setPort(port);
+					connection.add(endpoint);
 				}
 			}
 		} catch(BloxException ex) {

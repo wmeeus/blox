@@ -238,33 +238,36 @@ public class Bloxinst extends Bloxelement {
 		}
 		if (json.has("connectsTo")) {
 			try {
-				JSONArray ca = json.getJSONArray("connectsTo");
-				for (Object co: ca) {
-					if (!(co instanceof String)) {
-						System.err.println("connectGlobals: not expecting " + co.getClass().getName());
+				JSONArray connectionsarray = json.getJSONArray("connectsTo");
+				for (Object connectionsobject: connectionsarray) {
+					if (!(connectionsobject instanceof String)) {
+						System.err.println("connectGlobals: not expecting " + connectionsobject.getClass().getName());
 						System.exit(1);
 					}
-					String cs = (String) co;
-					String cn = cs;
-					if (cs.contains("<=")) {
-						int ix = cs.indexOf("<=");
-						cn = cs.substring(0, ix);
-						cs = cs.substring(ix + 2);
+					String connectionstring = (String) connectionsobject;
+					String connectionname = connectionstring;
+					if (connectionstring.contains("<=")) {
+						int index = connectionstring.indexOf("<=");
+						connectionname = connectionstring.substring(0, index);
+						connectionstring = connectionstring.substring(index + 2);
 					}
 
-					BloxGlobalConn gc = design.globalconns.get(cs);
-					if (gc == null) {
-						System.err.println("connectGlobals: node " + name + ": cannot find global connection " + cs);
+					BloxGlobalConn globalconnection = design.globalconns.get(connectionstring);
+					if (globalconnection == null) {
+						System.err.println("connectGlobals: node " + name + ": cannot find global connection " + connectionstring);
 						System.err.println(design.globalconns);
+						for (String k: design.globalconns.keySet()) {
+							System.err.println("key => " + k);
+						}
 						System.exit(1);
 					}
-					Bloxport p = node.getPort(cn);
+					Bloxport p = node.getPort(connectionname);
 					if (p == null) {
-						p = new Bloxport(cn, "slave", gc.type, node);
+						p = new Bloxport(connectionname, "slave", globalconnection.type, node);
 						node.addPort(p);
 					}
 					Bloxendpoint ep = design.findEndBlock(name).setPort(p);
-					gc.add(ep);
+					globalconnection.add(ep);
 				}
 			} catch (BloxException ex) {
 				ex.printStackTrace();
