@@ -244,6 +244,7 @@ public class Bloxnode extends Bloxelement implements Visitable {
 				slaveprefix = o.getString("slaveprefix");
 			}
 			if (o.has("connections")) {
+				System.out.println("** connections present in node " + name);
 			}
 			if (o.has("type")) {
 				type = o.getString("type");
@@ -437,10 +438,10 @@ public class Bloxnode extends Bloxelement implements Visitable {
 		PP.down();
 		if (this instanceof Bloxdesign) {
 			Bloxdesign d = (Bloxdesign)this;
-			if (d.globalconns!=null && !d.globalconns.isEmpty()) {
+			if (d.global_connections!=null && !d.global_connections.isEmpty()) {
 				r.append(PP.I + "Global connections:\n");
 				PP.down();
-				for (Bloxconn c: d.globalconns.values()) {
+				for (Bloxconn c: d.global_connections.values()) {
 					r.append(PP.I + c.toString() + "\n");
 				}
 				PP.up();
@@ -1394,19 +1395,19 @@ public class Bloxnode extends Bloxelement implements Visitable {
 		
 		if (!json.has("connections")) return;
 		
-		JSONArray ca = json.getJSONArray("connections");
-		System.out.println("*Bloxnode::connectSignals* connections: " + ca);
-		for (Object co: ca) {
-			if (co instanceof JSONObject) {
-				JSONObject chd = (JSONObject)co;
+		JSONArray connections_array = json.getJSONArray("connections");
+		System.out.println("*Bloxnode::connectSignals* connections: " + connections_array);
+		for (Object connections_object: connections_array) {
+			if (connections_object instanceof JSONObject) {
+				JSONObject connection = (JSONObject)connections_object;
 				try {
-					addConnection(new Bloxconn(chd, this));
+					addConnection(new Bloxconn(connection, this));
 				} catch (BloxException ex) {
 					ex.printStackTrace();
 					System.exit(1);
 				}
 			} else {
-				System.err.println("Skipping object of class " + co.getClass().getName());
+				System.err.println("Skipping object of class " + connections_object.getClass().getName());
 			}
 		}
 	}

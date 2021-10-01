@@ -17,7 +17,7 @@ public class Bloxdesign extends Bloxnode {
 	/**
 	 * A list of global connections in the design. 
 	 */
-	public Hashtable<String, BloxGlobalConn> globalconns = null;
+	public Hashtable<String, BloxGlobalConn> global_connections = null;
 
 	/**
 	 * Create an empty design
@@ -40,11 +40,11 @@ public class Bloxdesign extends Bloxnode {
 			for (Object co: ca) {
 				if (co instanceof JSONObject) {
 					JSONObject chd = (JSONObject)co;
-					if (globalconns == null)
-						globalconns = new Hashtable<String, BloxGlobalConn>();
-					BloxGlobalConn gc = new BloxGlobalConn(chd);
-					globalconns.put(gc.name, gc);
-					addConnection(gc);
+					if (global_connections == null)
+						global_connections = new Hashtable<String, BloxGlobalConn>();
+					BloxGlobalConn global_connection = new BloxGlobalConn(chd);
+					global_connections.put(global_connection.name, global_connection);
+					addConnection(global_connection);
 				} else {
 					System.err.println("Clock: skipping object of class " + co.getClass().getName());
 				}
@@ -57,10 +57,10 @@ public class Bloxdesign extends Bloxnode {
 			for (Object co: ca) {
 				if (co instanceof JSONObject) {
 					JSONObject chd = (JSONObject)co;
-					if (globalconns == null)
-						globalconns = new Hashtable<String, BloxGlobalConn>();
+					if (global_connections == null)
+						global_connections = new Hashtable<String, BloxGlobalConn>();
 					BloxGlobalConn gc = new BloxGlobalConn(chd);
-					globalconns.put(gc.name, gc);
+					global_connections.put(gc.name, gc);
 					addConnection(gc);
 				} else {
 					System.err.println("Clock: skipping object of class " + co.getClass().getName());
@@ -147,9 +147,9 @@ public class Bloxdesign extends Bloxnode {
 	 */
 	public void connectGlobals() {
 		// TODO in case of a subdesign, this might as well be a connection to the superdesign...
-		if (globalconns == null) return;
+		if (global_connections == null) return;
 		try {
-			for (BloxGlobalConn connection: globalconns.values()) {
+			for (BloxGlobalConn connection: global_connections.values()) {
 				if (connection.type == null) {
 					connection.type = Bloxbus.WIRE; // TODO best guess, may not be right!!
 				}

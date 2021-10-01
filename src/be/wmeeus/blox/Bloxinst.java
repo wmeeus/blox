@@ -245,25 +245,25 @@ public class Bloxinst extends Bloxelement {
 						System.exit(1);
 					}
 					String connectionstring = (String) connectionsobject;
-					String connectionname = connectionstring;
+					String portname = connectionstring;
 					if (connectionstring.contains("<=")) {
 						int index = connectionstring.indexOf("<=");
-						connectionname = connectionstring.substring(0, index);
+						portname = connectionstring.substring(0, index);
 						connectionstring = connectionstring.substring(index + 2);
 					}
 
-					BloxGlobalConn globalconnection = design.globalconns.get(connectionstring);
+					BloxGlobalConn globalconnection = design.global_connections.get(connectionstring);
 					if (globalconnection == null) {
 						System.err.println("connectGlobals: node " + name + ": cannot find global connection " + connectionstring);
-						System.err.println(design.globalconns);
-						for (String k: design.globalconns.keySet()) {
+						System.err.println(design.global_connections);
+						for (String k: design.global_connections.keySet()) {
 							System.err.println("key => " + k);
 						}
 						System.exit(1);
 					}
-					Bloxport p = node.getPort(connectionname);
+					Bloxport p = node.getPort(portname);
 					if (p == null) {
-						p = new Bloxport(connectionname, "slave", globalconnection.type, node);
+						p = new Bloxport(portname, "slave", globalconnection.type, node);
 						node.addPort(p);
 					}
 					Bloxendpoint ep = design.findEndBlock(name).setPort(p);

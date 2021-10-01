@@ -70,25 +70,25 @@ public class Bloxconn {
 
 	/**
 	 * Constructor: connection from JSON
-	 * @param o JSON object describing this connection
-	 * @param b Block in which this this connection belongs
+	 * @param connection_object JSON object describing this connection
+	 * @param node Block in which this this connection belongs
 	 * @throws BloxException
 	 */
-	public Bloxconn(JSONObject o, Bloxnode b) throws BloxException {
-		name = o.getString("name");
-		if (o.has("parameter")) {
-			parameter = Bloxparameter.get(o.getJSONObject("parameter"));
+	public Bloxconn(JSONObject connection_object, Bloxnode node) throws BloxException {
+		name = connection_object.getString("name");
+		if (connection_object.has("parameter")) {
+			parameter = Bloxparameter.get(connection_object.getJSONObject("parameter"));
 		}
-		if (o.has("type")) {
-			type = Bloxbus.get(o.getString("type"));
+		if (connection_object.has("type")) {
+			type = Bloxbus.get(connection_object.getString("type"));
 		}
 
-		JSONArray eps = o.getJSONArray("endpoints");
-		for (Object oo: eps) {
-			String ep = (String)oo;
-			if (!ep.contains(":")) throw new BloxException("Invalid connection endpoint: " + ep);
+		JSONArray endpoints_array = connection_object.getJSONArray("endpoints");
+		for (Object endpoint_object: endpoints_array) {
+			String endpoint_string = (String)endpoint_object;
+			if (!endpoint_string.contains(":")) throw new BloxException("Invalid connection endpoint: " + endpoint_string);
 
-			String pn = ep;
+			String pn = endpoint_string;
 
 			Bloxport p = null;
 			Bloxnode nb = null;
@@ -96,7 +96,7 @@ public class Bloxconn {
 
 			if (pn.startsWith(":")) {
 				// local port
-				nb = b; // port of the current block
+				nb = node; // port of the current block
 				hasport = true;
 				String pnn = pn.substring(1);
 				String idx = null;
@@ -116,9 +116,9 @@ public class Bloxconn {
 					throw new BloxException(ex.toString());
 				}
 			} else {
-				ept = b.findEndpoint(pn);
+				ept = node.findEndpoint(pn);
 				if (ept == null) {
-					throw new BloxException("Endpoint " + pn + " not found in " + b);
+					throw new BloxException("Endpoint " + pn + " not found in " + node);
 				}
 			}
 

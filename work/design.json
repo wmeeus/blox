@@ -6,13 +6,40 @@
 				"name": "clk",
 				"has_reset": true,
 				"origin": ":clk"
+			},
+			{
+				"name": "core_clk",
+				"has_reset": true,
+				"origin": "clockmanager:core_clk"
 			}
 		],
 		"children": [
 			{
 				"name": "clockmanager",
 				"connectsTo": [
-					""
+					"clk"
+				]
+			},
+			{
+				"name": "control_plane",
+				"connectsTo": [
+					"core_clk"
+				]
+			},
+			{
+				"name": "core",
+				"connectsTo": [
+					"core_clk"
+				]
+			}
+		],
+		"connections": [
+			{
+				"name": "clk_ctrl",
+				"type": "axi4",
+				"endpoints": [
+					"clockmanager:ctrl",
+					"control_plane:clk_ctrl"
 				]
 			}
 		]
