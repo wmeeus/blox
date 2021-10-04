@@ -8,7 +8,7 @@ public class ConnectSignals implements Visitor {
 	}
 
 	@Override
-	public void visit(Bloxinst b) {
+	public void visit(Bloxinstance b) {
 		// TODO Auto-generated method stub
 		
 	}

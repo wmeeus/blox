@@ -28,7 +28,7 @@ public class Bloxendpoint {
 	 * List of path items
 	 * 
 	 */
-	private ArrayList<Bloxinst> ipath = null;
+	private ArrayList<Bloxinstance> ipath = null;
 
 	/**
 	 * List of path indices. The lists of path items and path indices must have the same 
@@ -62,10 +62,10 @@ public class Bloxendpoint {
 	 * @param n    the instance to add to the path
 	 * @param ind  the index to go with the additional instance
 	 */
-	public Bloxendpoint(Bloxendpoint ep, Bloxinst n, Mnode ind) {
+	public Bloxendpoint(Bloxendpoint ep, Bloxinstance n, Mnode ind) {
 		port = ep.port;
 		portindex = ep.portindex;
-		ipath = new ArrayList<Bloxinst>();
+		ipath = new ArrayList<Bloxinstance>();
 		indices = new ArrayList<Mnode>();
 		if (ep.ipath != null) {
 			ipath.addAll(ep.ipath);
@@ -83,8 +83,8 @@ public class Bloxendpoint {
 	 * @param b the instance
 	 * @param ind the index
 	 */
-	public Bloxendpoint(Bloxinst b, String ind) {
-		ipath = new ArrayList<Bloxinst>();
+	public Bloxendpoint(Bloxinstance b, String ind) {
+		ipath = new ArrayList<Bloxinstance>();
 		indices = new ArrayList<Mnode>();
 		ipath.add(b);
 		if (ind == null) {
@@ -115,9 +115,9 @@ public class Bloxendpoint {
 	 * @param atfront add the new item at the front (true) or rear (false) end of the list
 	 * @return this endpoint
 	 */
-	public Bloxendpoint add(Bloxinst b, String ind, boolean atfront) {
+	public Bloxendpoint add(Bloxinstance b, String ind, boolean atfront) {
 		if (ipath == null) {
-			ipath = new ArrayList<Bloxinst>();
+			ipath = new ArrayList<Bloxinstance>();
 			indices = new ArrayList<Mnode>();
 		}
 		if (atfront) {
@@ -160,7 +160,7 @@ public class Bloxendpoint {
 	 * @param i the index in the path
 	 * @return the requested instance
 	 */
-	public Bloxinst getInst(int i) {
+	public Bloxinstance getInst(int i) {
 		if (ipath == null || ipath.size() <= i) return null;
 		return ipath.get(ipath.size() - i - 1);
 	}
@@ -188,7 +188,7 @@ public class Bloxendpoint {
 	 * Return the last instance in the path
 	 * @return the last instance in the path
 	 */
-	public Bloxinst getLastInst() {
+	public Bloxinstance getLastInst() {
 		if (ipath == null) return null;
 		return ipath.get(0);
 	}
@@ -233,7 +233,7 @@ public class Bloxendpoint {
 			}
 		}
 		int i = 0;
-		if (ipath != null) for (Bloxinst n: ipath) {
+		if (ipath != null) for (Bloxinstance n: ipath) {
 			Mnode indx = indices.get(i++);
 			String idx = null;
 			if (indx != null ) {
@@ -293,7 +293,7 @@ public class Bloxendpoint {
 		}
 		Bloxendpoint result = new Bloxendpoint(port);
 		if (levels < pathsize) {
-			result.ipath = new ArrayList<Bloxinst>();
+			result.ipath = new ArrayList<Bloxinstance>();
 			result.indices = new ArrayList<Mnode>();
 			for (int i = 0; i < pathsize - levels; i++) {
 				result.ipath.add(ipath.get(i));
@@ -391,8 +391,8 @@ public class Bloxendpoint {
 		Bloxnode en = ipath.get(0).node;
 		if (en.name.endsWith("_wrap")) {
 			String iname = "inst_" + en.name.substring(0, en.name.length() - 5);
-			Bloxinst bi = null;
-			for (Bloxinst i: en.children) {
+			Bloxinstance bi = null;
+			for (Bloxinstance i: en.children) {
 				if (i.name.equals(iname)) {
 					bi = i;
 					break;

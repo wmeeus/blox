@@ -70,7 +70,7 @@ public class Bloxdesign extends Bloxnode {
 			System.out.println("design " + name + ": no globals");
 		}
 		design = this;
-		for (Bloxinst inst: children) {
+		for (Bloxinstance inst: children) {
 			inst.setDesign(this);
 			inst.node.setDesign(this);
 		}
@@ -128,7 +128,12 @@ public class Bloxdesign extends Bloxnode {
 				if (o.has("design")) {
 					design = new Bloxdesign(o.getJSONObject("design"));
 					design.accept(new ConnectGlobals());
+					System.out.println("** start connecting signals **");
+					design.accept(new ConnectSignals());
+					System.out.println("** done connecting signals **");
+					System.out.println("** start connecting nodes **");
 					design.accept(new ConnectNodes());
+					System.out.println("** done connecting nodes **");
 				} else {
 					throw new BloxException("JSON doesn't contain a design");
 				}

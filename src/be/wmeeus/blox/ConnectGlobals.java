@@ -12,7 +12,7 @@ public class ConnectGlobals implements Visitor {
 		b.connectGlobals();
 	}
 
-	public void visit(Bloxinst b) {
+	public void visit(Bloxinstance b) {
 		b.connectGlobals();
 	}
 

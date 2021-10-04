@@ -18,12 +18,26 @@
 				"name": "clockmanager",
 				"connectsTo": [
 					"clk"
+				],
+				"port": [
+					{
+						"name": "ctrl",
+						"type": "axi4",
+						"direction": "in"
+					}
 				]
 			},
 			{
 				"name": "control_plane",
 				"connectsTo": [
 					"core_clk"
+				],
+				"port": [
+					{
+						"name": "clk_ctrl",
+						"type": "axi4",
+						"direction": "out"
+					}
 				]
 			},
 			{

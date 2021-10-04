@@ -160,10 +160,10 @@ public class Bloxport extends Bloxelement {
 	 */
 	public boolean nameEquals(String n) {
 		if (name.equals(n)) return true;
-		if (type.equals(Bloxbus.CLKRST)) {
-			if (name.equals(n + "_clk")) return true;
-			if (name.equals("clk") && n.isEmpty()) return true;
-		}
+//		if (type.equals(Bloxbus.CLKRST)) {
+//			if (name.equals(n + "_clk")) return true;
+//			if (name.equals("clk") && n.isEmpty()) return true;
+//		}
 		return false;
 	}
 

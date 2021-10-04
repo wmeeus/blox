@@ -8,13 +8,13 @@ import be.wmeeus.symmath.expression.*;
 import be.wmeeus.symmath.util.Mexception;
 
 /**
- * Class Bloxconn contains a connection in a block diagram. A connection is a set of 
+ * Class Bloxconnection contains a connection in a block diagram. A connection is a set of 
  * interconnected endpoints. 
  * 
  * @author Wim Meeus
  *
  */
-public class Bloxconn {
+public class Bloxconnection {
 	/**
 	 * Name of this connection
 	 */
@@ -53,7 +53,7 @@ public class Bloxconn {
 	/**
 	 * Depth (number of levels) of the highest level node where this connection is visible
 	 */
-	int connbaselevel = 0;
+	int connection_baselevel = 0;
 
 	/**
 	 * Start index for fanout
@@ -64,7 +64,7 @@ public class Bloxconn {
 	 * Constructor: empty connection
 	 * @param n name of this connection
 	 */
-	public Bloxconn(String n) {
+	public Bloxconnection(String n) {
 		name = n;
 	}
 
@@ -74,7 +74,7 @@ public class Bloxconn {
 	 * @param node Block in which this this connection belongs
 	 * @throws BloxException
 	 */
-	public Bloxconn(JSONObject connection_object, Bloxnode node) throws BloxException {
+	public Bloxconnection(JSONObject connection_object, Bloxnode node) throws BloxException {
 		name = connection_object.getString("name");
 		if (connection_object.has("parameter")) {
 			parameter = Bloxparameter.get(connection_object.getJSONObject("parameter"));
@@ -175,7 +175,7 @@ public class Bloxconn {
 	 * @throws BloxException
 	 */
 	public Bloxnode getBase(Bloxnode parent) throws BloxException {
-		connbaselevel = 0;
+		connection_baselevel = 0;
 		boolean done = false;
 		int npoints = endpoints.size();
 		if (npoints < 2) { // not a proper connection
@@ -184,32 +184,32 @@ public class Bloxconn {
 		Bloxendpoint end0 = endpoints.get(0);
 		int depth0 = end0.pathlength();
 		do {
-			if ((depth0 - 1) <= connbaselevel) {
+			if ((depth0 - 1) <= connection_baselevel) {
 				done = true;
 				break;
 			}
-			Bloxnode node0_level = end0.get(connbaselevel);
+			Bloxnode node0_level = end0.get(connection_baselevel);
 			for (int i = 1; i < npoints; i++) {
 				Bloxendpoint endn = endpoints.get(i);
-				if (endn.pathlength() - 1 <+ connbaselevel) {
+				if (endn.pathlength() - 1 <+ connection_baselevel) {
 					done = true;
 					break;
 				}
-				Bloxnode noden_level = endn.get(connbaselevel);
+				Bloxnode noden_level = endn.get(connection_baselevel);
 				if (node0_level != noden_level) {
 					done = true;
 					break;
 				}
 			}
 			if (done) break;
-			connbaselevel++;
+			connection_baselevel++;
 		} while (true);
 
 
-		if (connbaselevel == 0) {
+		if (connection_baselevel == 0) {
 			connbase = parent;
 		} else {
-			connbase = end0.get(connbaselevel - 1);
+			connbase = end0.get(connection_baselevel - 1);
 		}
 		return connbase;
 	}
@@ -290,7 +290,7 @@ public class Bloxconn {
 	 * @throws BloxException
 	 */
 	public Bloxendpoint connectUp(Bloxnode parent) throws BloxException {
-		Bloxconn lconn = connect(parent, true);
+		Bloxconnection lconn = connect(parent, true);
 		Bloxendpoint ep = getPort();
 		if (ep == null) {
 			Bloxport p = parent.getPort(name);
@@ -335,8 +335,8 @@ public class Bloxconn {
 	 * @return the localized connection (inside the parent node) derived from this connection
 	 * @throws BloxException
 	 */
-	public Bloxconn connect(Bloxnode parent, boolean recursing) throws BloxException {
-		Bloxconn localconn = null;
+	public Bloxconnection connect(Bloxnode parent, boolean recursing) throws BloxException {
+		Bloxconnection localconn = null;
 		if (isLocal()) {
 			parent.addLocalConnection(this);
 			localconn = this;
@@ -350,11 +350,11 @@ public class Bloxconn {
 			}
 
 			// subconns contains connections that need to be propagated to the next deeper level
-			Hashtable<Bloxnode, Hashtable<Mnode, Bloxconn> > subconns = 
-					new Hashtable<Bloxnode, Hashtable<Mnode, Bloxconn> >();
+			Hashtable<Bloxnode, Hashtable<Mnode, Bloxconnection> > subconns = 
+					new Hashtable<Bloxnode, Hashtable<Mnode, Bloxconnection> >();
 			// localconn is the newly created local connection in the current node
 			// endpoints will be added below
-			localconn = new Bloxconn(name);
+			localconn = new Bloxconnection(name);
 			localconn.parameter = parameter;
 			parent.addLocalConnection(localconn);
 
@@ -372,13 +372,13 @@ public class Bloxconn {
 				Bloxendpoint endstrip = ep.strip(1);
 
 				// conaddm  
-				Hashtable<Mnode, Bloxconn> conaddm = subconns.get(nnode);
+				Hashtable<Mnode, Bloxconnection> conaddm = subconns.get(nnode);
 				if (conaddm == null) {
-					conaddm = new Hashtable<Mnode, Bloxconn>();
+					conaddm = new Hashtable<Mnode, Bloxconnection>();
 					subconns.put(nnode, conaddm);
 				}
 				//			System.err.println("Bloxconn::connect* endpoint " + ep);
-				Bloxconn conadd = null;
+				Bloxconnection conadd = null;
 				if (parameter == null || ep.getIndex(0) == null) {
 					conadd = conaddm.get(Mvalue.NONE);
 				} else {
@@ -387,7 +387,7 @@ public class Bloxconn {
 				if (conadd != null) {
 					conadd.add(endstrip);
 				} else {
-					Bloxconn newconn = new Bloxconn(name);
+					Bloxconnection newconn = new Bloxconnection(name);
 					newconn.parameter = parameter;
 					newconn.add(endstrip);
 					if (parameter == null || ep.getIndex(0) == null) {
@@ -404,9 +404,9 @@ public class Bloxconn {
 
 			if (!subconns.isEmpty()) {
 				for (Bloxnode en: subconns.keySet()) {
-					Hashtable<Mnode, Bloxconn> cm = subconns.get(en);
+					Hashtable<Mnode, Bloxconnection> cm = subconns.get(en);
 					for (Mnode ix: cm.keySet()) {
-						Bloxconn c = cm.get(ix);
+						Bloxconnection c = cm.get(ix);
 						c.type = type;
 						//					Bloxport p = new Bloxport(name, en, type);
 						//					p.direction = c.hasMaster()?"master":"slave";
@@ -440,7 +440,7 @@ public class Bloxconn {
 		// set the fanout parameter
 
 		Bloxnode busif = Bloxbus.getConnector(type, type);
-		Bloxinst ifinst = parent.addInstance(new Bloxinst("inst_" + busif.getName(), busif));
+		Bloxinstance ifinst = parent.addInstance(new Bloxinstance("inst_" + busif.getName(), busif));
 
 		ArrayList<Bloxendpoint> masterend = new ArrayList<Bloxendpoint>();
 		Bloxendpoint epslv = new Bloxendpoint(ifinst, null);
@@ -458,7 +458,7 @@ public class Bloxconn {
 				masterend.add(ep);
 			} else {
 				// make a new local connection which connects this endpoint to the master port of the interface
-				Bloxconn fanconn = new Bloxconn("f_" + type.name + "_" + fanout);
+				Bloxconnection fanconn = new Bloxconnection("f_" + type.name + "_" + fanout);
 				fanconn.fanoutstart = fanout;
 				fanconn.add(ep);
 				fanconn.type = type;
@@ -483,7 +483,7 @@ public class Bloxconn {
 		int f = 0;
 		for (Bloxendpoint ep: endpoints) {
 			if (ep.isMaster()) continue; // is fanin!
-			Bloxinst epi = ep.getLastInst();
+			Bloxinstance epi = ep.getLastInst();
 			if (epi != null && parameter == null) {
 				f += epi.repeat;
 			} else {

@@ -9,7 +9,7 @@ import org.json.*;
  * @author Wim Meeus
  *
  */
-public class BloxGlobalConn extends Bloxconn {
+public class BloxGlobalConn extends Bloxconnection {
 	/**
 	 * indicates whether this global connection contains a reset signal
 	 */

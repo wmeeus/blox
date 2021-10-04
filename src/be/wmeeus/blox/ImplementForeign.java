@@ -13,7 +13,7 @@ public class ImplementForeign implements Visitor {
 			b.implementForeign();
 	}
 
-	public void visit(Bloxinst b) {
+	public void visit(Bloxinstance b) {
 		// nothing to do
 	}
 

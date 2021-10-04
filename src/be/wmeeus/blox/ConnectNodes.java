@@ -12,7 +12,7 @@ public class ConnectNodes implements Visitor {
 		b.connectNodes();
 	}
 
-	public void visit(Bloxinst b) {
+	public void visit(Bloxinstance b) {
 		// Nothing to do
 	}
 

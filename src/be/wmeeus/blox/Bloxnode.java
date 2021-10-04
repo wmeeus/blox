@@ -23,7 +23,7 @@ public class Bloxnode extends Bloxelement implements Visitable {
 	/**
 	 * List of instances in this node
 	 */
-	ArrayList<Bloxinst> children = new ArrayList<Bloxinst>();
+	ArrayList<Bloxinstance> children = new ArrayList<Bloxinstance>();
 
 	/**
 	 * List of ports of this node
@@ -33,12 +33,12 @@ public class Bloxnode extends Bloxelement implements Visitable {
 	/**
 	 * List of "raw" connections in this node i.e. not localized, may span multiple hierarchical levels
 	 */
-	ArrayList<Bloxconn> connections = null;
+	ArrayList<Bloxconnection> connections = null;
 
 	/**
 	 * List of "local" connections in this node, i.e. connections inside this node
 	 */
-	ArrayList<Bloxconn> localconnections = null;
+	ArrayList<Bloxconnection> localconnections = null;
 
 	/**
 	 * Type indication of this node: hierarchy, functional, foreign ...
@@ -53,13 +53,13 @@ public class Bloxnode extends Bloxelement implements Visitable {
 	/**
 	 * List of all instances of this node in the design
 	 */
-	ArrayList<Bloxinst> parents = new ArrayList<Bloxinst>();
+	ArrayList<Bloxinstance> parents = new ArrayList<Bloxinstance>();
 
 	/**
 	 * Add an instance of this node to the instances list
 	 * @param i the instance of this node to add to the list
 	 */
-	public void addParent(Bloxinst i) {
+	public void addParent(Bloxinstance i) {
 		parents.add(i);
 	}
 
@@ -67,7 +67,7 @@ public class Bloxnode extends Bloxelement implements Visitable {
 	 * Returns the list of instances of this node
 	 * @return the list of instances of this node
 	 */
-	public ArrayList<Bloxinst> getParents() {
+	public ArrayList<Bloxinstance> getParents() {
 		return parents;
 	}
 
@@ -212,7 +212,7 @@ public class Bloxnode extends Bloxelement implements Visitable {
 				for (Object co: ca) {
 					if (co instanceof JSONObject) {
 						JSONObject chd = (JSONObject)co;
-						Bloxinst ci = new Bloxinst(chd);
+						Bloxinstance ci = new Bloxinstance(chd);
 						children.add(ci);
 						ci.parent = this;
 					} else {
@@ -303,8 +303,8 @@ public class Bloxnode extends Bloxelement implements Visitable {
 	 * Add a "raw" connection to this node
 	 * @param c the connection to add
 	 */
-	public void addConnection(Bloxconn c) {
-		if (connections==null) connections = new ArrayList<Bloxconn>();
+	public void addConnection(Bloxconnection c) {
+		if (connections==null) connections = new ArrayList<Bloxconnection>();
 		connections.add(c);
 	}
 
@@ -312,8 +312,8 @@ public class Bloxnode extends Bloxelement implements Visitable {
 	 * Add a "local" connection to this node
 	 * @param c the connection to add
 	 */
-	public void addLocalConnection(Bloxconn c) {
-		if (localconnections==null) localconnections = new ArrayList<Bloxconn>();
+	public void addLocalConnection(Bloxconnection c) {
+		if (localconnections==null) localconnections = new ArrayList<Bloxconnection>();
 		localconnections.add(c);
 	}
 
@@ -322,8 +322,8 @@ public class Bloxnode extends Bloxelement implements Visitable {
 	 * @param i the instance to add
 	 * @return the instance
 	 */
-	public Bloxinst addInstance(Bloxinst i) {
-		if (children == null) children = new ArrayList<Bloxinst>();
+	public Bloxinstance addInstance(Bloxinstance i) {
+		if (children == null) children = new ArrayList<Bloxinstance>();
 		children.add(i);
 		return i;
 	}
@@ -333,9 +333,9 @@ public class Bloxnode extends Bloxelement implements Visitable {
 	 * @param b the node
 	 * @return the requested instance
 	 */
-	public Bloxinst getInstanceOf(Bloxnode b) {
+	public Bloxinstance getInstanceOf(Bloxnode b) {
 		if (children == null) return null;
-		for (Bloxinst c: children) {
+		for (Bloxinstance c: children) {
 			if (c.node.equals(b)) return c;
 		}
 		return null;
@@ -346,9 +346,9 @@ public class Bloxnode extends Bloxelement implements Visitable {
 	 * @param n the name of the instance or node to search for
 	 * @return the requested instance, or null if no such instance exists
 	 */
-	public Bloxinst getChild(String n) {
+	public Bloxinstance getChild(String n) {
 		if (children ==  null || children.isEmpty()) return null;
-		for (Bloxinst i: children) {
+		for (Bloxinstance i: children) {
 			if (i.name.equals(n)) return i;
 			if (i.node.name.equals(n)) return i;
 		}
@@ -376,7 +376,7 @@ public class Bloxnode extends Bloxelement implements Visitable {
 		} else {
 			pl = p;
 		}
-		Bloxinst bn = getChild(pl);
+		Bloxinstance bn = getChild(pl);
 		if (bn==null) {
 			// add an instance
 			Bloxnode bl = null;
@@ -393,7 +393,7 @@ public class Bloxnode extends Bloxelement implements Visitable {
 					bl = new Bloxnode(n+"_in_"+(uniqueint++)+"_"+name);
 				}
 			}
-			Bloxinst bi = new Bloxinst(pl, bl);
+			Bloxinstance bi = new Bloxinstance(pl, bl);
 			bl.setParent(bi);
 			bi.setParent(this);
 			children.add(bi);
@@ -441,7 +441,7 @@ public class Bloxnode extends Bloxelement implements Visitable {
 			if (d.global_connections!=null && !d.global_connections.isEmpty()) {
 				r.append(PP.I + "Global connections:\n");
 				PP.down();
-				for (Bloxconn c: d.global_connections.values()) {
+				for (Bloxconnection c: d.global_connections.values()) {
 					r.append(PP.I + c.toString() + "\n");
 				}
 				PP.up();
@@ -456,14 +456,14 @@ public class Bloxnode extends Bloxelement implements Visitable {
 		PP.up();
 		r.append(PP.I + "Subnodes: (number: " + children.size() + ")\n");
 		PP.down();
-		for (Bloxinst b: children) {
+		for (Bloxinstance b: children) {
 			b.printHierarchy(maxdepth, r);
 		}
 		PP.up();
 		if (connections != null) {
 			r.append(PP.I + "Connections: (number: " + connections.size() + ")\n");
 			PP.down();
-			for (Bloxconn c: connections) {
+			for (Bloxconnection c: connections) {
 				r.append(PP.I + c.toString() + "\n");
 			}
 			PP.up();
@@ -471,7 +471,7 @@ public class Bloxnode extends Bloxelement implements Visitable {
 		if (localconnections != null) {
 			r.append(PP.I + "Local connections: (number: " + localconnections.size() + ")\n");
 			PP.down();
-			for (Bloxconn c: localconnections) {
+			for (Bloxconnection c: localconnections) {
 				r.append(PP.I + c.toString() + "\n");
 			}
 			PP.up();
@@ -494,7 +494,7 @@ public class Bloxnode extends Bloxelement implements Visitable {
 	 */
 	public void accept(Visitor visitor) {
 		visitor.visit(this);
-		for (Bloxinst b: children) {
+		for (Bloxinstance b: children) {
 			b.accept(visitor);
 		}
 		for (Bloxport p: ports) {
@@ -507,7 +507,7 @@ public class Bloxnode extends Bloxelement implements Visitable {
 	 * Returns a list of instances in this node
 	 * @return the list of instances in this node
 	 */
-	public ArrayList<Bloxinst> getChildren() {
+	public ArrayList<Bloxinstance> getChildren() {
 		return children;
 	}
 
@@ -517,7 +517,7 @@ public class Bloxnode extends Bloxelement implements Visitable {
 	 * @return the requested node, or null if no node with the given name is found inside this node
 	 */
 	public Bloxnode findBlock(String nn) {
-		for (Bloxinst bi: children) {
+		for (Bloxinstance bi: children) {
 			Bloxnode bn = bi.findBlock(nn);
 			if (bn!=null) return bn;
 		}
@@ -530,7 +530,7 @@ public class Bloxnode extends Bloxelement implements Visitable {
 	 * @return the requested endpoint, or null if no node with the given name is found inside this node
 	 */
 	public Bloxendpoint findEndBlock(String nn) {
-		for (Bloxinst bi: children) {
+		for (Bloxinstance bi: children) {
 			Bloxendpoint bn = bi.findEndBlock(nn);
 			if (bn!=null) return bn;
 		}
@@ -566,7 +566,7 @@ public class Bloxnode extends Bloxelement implements Visitable {
 			return ept;
 		}
 
-		for (Bloxinst bi: children) {
+		for (Bloxinstance bi: children) {
 			Bloxendpoint bn = bi.findEndpoint(pn);
 			if (bn!=null) return bn;
 		}
@@ -588,7 +588,7 @@ public class Bloxnode extends Bloxelement implements Visitable {
 		return ve;
 	}
 
-	private Hashtable<Bloxinst, ArrayList<VHDLinstance> > insttt = null;  
+	private Hashtable<Bloxinstance, ArrayList<VHDLinstance> > insttt = null;  
 
 	/**
 	 * Generate a VHDL entity from this node
@@ -673,8 +673,8 @@ public class Bloxnode extends Bloxelement implements Visitable {
 			Hashtable<Bloxnode, ArrayList<VHDLinstance> > instances = new Hashtable<Bloxnode, ArrayList<VHDLinstance> >();
 			ArrayList<Integer> ldom = null;
 
-			insttt = new Hashtable<Bloxinst, ArrayList<VHDLinstance> >();  
-			for (Bloxinst inst: children) {
+			insttt = new Hashtable<Bloxinstance, ArrayList<VHDLinstance> >();  
+			for (Bloxinstance inst: children) {
 				VHDLentity ee = inst.node.vhdl();
 				ArrayList<VHDLinstance> ttlist = new ArrayList<VHDLinstance>();
 				insttt.put(inst,  ttlist);
@@ -695,7 +695,7 @@ public class Bloxnode extends Bloxelement implements Visitable {
 				}
 			}
 
-			if (localconnections != null) for (Bloxconn conn: localconnections) {
+			if (localconnections != null) for (Bloxconnection conn: localconnections) {
 				boolean paramized = false;
 				ArrayList<Integer> pdom = null;
 				if (conn.parameter != null) {
@@ -747,7 +747,7 @@ public class Bloxnode extends Bloxelement implements Visitable {
 				}
 			}
 
-			for (Bloxinst bi: children) {
+			for (Bloxinstance bi: children) {
 				if (bi.json != null && bi.json.has("strap")) {
 					JSONArray ca = bi.json.getJSONArray("strap");
 					for (Object co: ca) {
@@ -776,7 +776,7 @@ public class Bloxnode extends Bloxelement implements Visitable {
 		return e;
 	}
 
-	void strap(Bloxinst inst, JSONObject o) throws BloxException {
+	void strap(Bloxinstance inst, JSONObject o) throws BloxException {
 		System.out.println("*strap* " + inst + " :: " + o);
 
 		if (o == null) return;
@@ -867,14 +867,14 @@ public class Bloxnode extends Bloxelement implements Visitable {
 	 * @param conn the connection
 	 */
 	private void vhdlConnectRing(VHDLarchitecture a, Hashtable<Bloxnode, ArrayList<VHDLinstance>> instances,
-			Bloxconn conn) throws BloxException {
+			Bloxconnection conn) throws BloxException {
 		int segment = 0;
 		Bloxendpoint firstendpt = null;
 		Hashtable<Bloxbusport, VHDLsymbol> signals = new Hashtable<Bloxbusport, VHDLsymbol>();
 		try {
 			for (Bloxendpoint ep: conn.endpoints) {
 				VHDLinstance inst = null;
-				Bloxinst bloxinst = null;
+				Bloxinstance bloxinst = null;
 				if (!ep.isPort()) {
 					// endpoint is an instance
 					bloxinst = ep.getLastInst();
@@ -987,7 +987,7 @@ public class Bloxnode extends Bloxelement implements Visitable {
 	 * @throws BloxException
 	 */
 	private void vhdlConnectBusport(VHDLarchitecture a, Hashtable<Bloxnode, ArrayList<VHDLinstance>> instances,
-			Bloxconn conn, boolean paramized, Bloxbusport bp, int parseq, int seq, 
+			Bloxconnection conn, boolean paramized, Bloxbusport bp, int parseq, int seq, 
 			ArrayList<Integer> ldom) throws VHDLexception, BloxException {
 
 		String suffix = "";
@@ -1108,9 +1108,9 @@ public class Bloxnode extends Bloxelement implements Visitable {
 	 * @param s the name to look for
 	 * @return the requested connection, or null if the connection does not exist
 	 */
-	private Bloxconn getConnection(String s) {
+	private Bloxconnection getConnection(String s) {
 		if (connections == null) return null;
-		for (Bloxconn c: connections) {
+		for (Bloxconnection c: connections) {
 			if (c.name.equals(s)) return c;
 		}
 		return null;
@@ -1135,7 +1135,7 @@ public class Bloxnode extends Bloxelement implements Visitable {
 	 * @throws BloxException
 	 */
 	private VHDLsignal vhdlConnectSingleBusport(VHDLarchitecture a, Hashtable<Bloxnode, ArrayList<VHDLinstance>> instances,
-			Bloxconn conn, boolean paramized, Bloxbusport bp, int parseq, int seq, 
+			Bloxconnection conn, boolean paramized, Bloxbusport bp, int parseq, int seq, 
 			ArrayList<Integer> ldom, Bloxendpoint ep, VHDLnode bs, int fanoutstart, String suffix) throws VHDLexception, BloxException {
 		try {
 			Hashtable<Msymbol, Integer> paramvalues = null;
@@ -1274,11 +1274,15 @@ public class Bloxnode extends Bloxelement implements Visitable {
 	}
 
 	public void connectNodes() {
+		System.out.println("** connectNodes ** in node " + name + " connections in json? " + json.has("connections"));
 		if (connections == null || connections.isEmpty()) {
 			return;
 		}
+		System.out.println("**              ** connections is not null or empty");
+		System.out.println(json.get("connections"));
 		try {
-			for (Bloxconn c: connections) {
+			for (Bloxconnection c: connections) {
+				System.out.println("** connecting: " + c);
 				// make the connection
 				c.wrap();
 				c.connect(this, false);
@@ -1334,7 +1338,7 @@ public class Bloxnode extends Bloxelement implements Visitable {
 	public void setDesign(Bloxdesign bloxdesign) {
 		if (!(this instanceof Bloxdesign)) {
 			design = bloxdesign;
-			for (Bloxinst inst: children) {
+			for (Bloxinstance inst: children) {
 				inst.design = bloxdesign;
 				inst.node.setDesign(bloxdesign);
 			}
@@ -1345,7 +1349,7 @@ public class Bloxnode extends Bloxelement implements Visitable {
 	 * Get the list of connections in this node
 	 * @return the list of connections in this node
 	 */
-	public ArrayList<Bloxconn> getConnections() {
+	public ArrayList<Bloxconnection> getConnections() {
 		return connections;
 	}
 
@@ -1353,7 +1357,7 @@ public class Bloxnode extends Bloxelement implements Visitable {
 	 * Sets the list of connections in this node
 	 * @param connections the list of connections in this node
 	 */
-	public void setConnections(ArrayList<Bloxconn> connections) {
+	public void setConnections(ArrayList<Bloxconnection> connections) {
 		this.connections = connections;
 	}
 
@@ -1389,10 +1393,6 @@ public class Bloxnode extends Bloxelement implements Visitable {
 	public void connectSignals() {
 		System.out.println("*Bloxnode::connectSignals* " + name);
 		
-		if (name.equals("iegress")) {
-			System.out.println(json);
-		}
-		
 		if (!json.has("connections")) return;
 		
 		JSONArray connections_array = json.getJSONArray("connections");
@@ -1401,7 +1401,7 @@ public class Bloxnode extends Bloxelement implements Visitable {
 			if (connections_object instanceof JSONObject) {
 				JSONObject connection = (JSONObject)connections_object;
 				try {
-					addConnection(new Bloxconn(connection, this));
+					addConnection(new Bloxconnection(connection, this));
 				} catch (BloxException ex) {
 					ex.printStackTrace();
 					System.exit(1);

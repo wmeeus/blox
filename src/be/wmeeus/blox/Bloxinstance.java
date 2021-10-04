@@ -14,7 +14,7 @@ import be.wmeeus.util.PP;
  * @author Wim Meeus
  *
  */
-public class Bloxinst extends Bloxelement {
+public class Bloxinstance extends Bloxelement {
 	/**
 	 * The instantiated node
 	 */
@@ -47,7 +47,7 @@ public class Bloxinst extends Bloxelement {
 	/**
 	 * The port map of this instance
 	 */
-	Hashtable<Bloxport, Bloxconn> portmap = new Hashtable<Bloxport, Bloxconn>();
+	Hashtable<Bloxport, Bloxconnection> portmap = new Hashtable<Bloxport, Bloxconnection>();
 
 	/**
 	 * Instantiate a node
@@ -56,7 +56,7 @@ public class Bloxinst extends Bloxelement {
 	 * @param n the node to instantiate
 	 * @throws BloxException
 	 */
-	public Bloxinst(String s, Bloxnode n) throws BloxException {
+	public Bloxinstance(String s, Bloxnode n) throws BloxException {
 		s = s.trim();
 		if ((s==null || s.isEmpty()) && n==null) 
 			throw new BloxException("Null/empty name AND null node, whatare we doing here?");
@@ -76,7 +76,7 @@ public class Bloxinst extends Bloxelement {
 	 * @param o the JSON object
 	 * @throws BloxException
 	 */
-	public Bloxinst(JSONObject o) throws BloxException {
+	public Bloxinstance(JSONObject o) throws BloxException {
 		json = o;
 		try {
 			String n = o.getString("name");
@@ -128,7 +128,7 @@ public class Bloxinst extends Bloxelement {
 	 * @param c the connection
 	 * @throws BloxException
 	 */
-	public void map(String pname, Bloxconn c) throws BloxException {
+	public void map(String pname, Bloxconnection c) throws BloxException {
 		Bloxport b = node.getPort(pname);
 		if (b==null) throw new BloxException("Port " + pname + " of block " + node.name + " not defined");
 		portmap.put(b,  c);
