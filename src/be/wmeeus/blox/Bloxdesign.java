@@ -201,9 +201,5 @@ public class Bloxdesign extends Bloxnode {
 			ex.printStackTrace();
 			System.exit(-1);
 		}
-		if (json.has("connectsTo")) {
-
-			super.connectGlobals();
-		}
 	}
 }

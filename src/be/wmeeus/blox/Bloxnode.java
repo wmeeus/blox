@@ -1274,29 +1274,20 @@ public class Bloxnode extends Bloxelement implements Visitable {
 	}
 
 	public void connectNodes() {
-		System.out.println("** connectNodes ** in node " + name + " connections in json? " + json.has("connections"));
+		System.out.println("** connectNodes ** node " + name);
 		if (connections == null || connections.isEmpty()) {
 			return;
 		}
-		System.out.println("**              ** connections is not null or empty");
-		System.out.println(json.get("connections"));
 		try {
-			for (Bloxconnection c: connections) {
-				System.out.println("** connecting: " + c);
+			for (Bloxconnection connection: connections) {
+				System.out.println("** connecting: " + connection);
 				// make the connection
-				c.wrap();
-				c.connect(this, false);
+				connection.wrap();
+				connection.connect(this, false);
 			}
 		} catch(BloxException ex) {
 			ex.printStackTrace();
 		}
-	}
-
-	/**
-	 * Make connections to global signals from this node
-	 */
-	public void connectGlobals() {
-		// functionality moved to instances
 	}
 
 	/**
@@ -1338,9 +1329,9 @@ public class Bloxnode extends Bloxelement implements Visitable {
 	public void setDesign(Bloxdesign bloxdesign) {
 		if (!(this instanceof Bloxdesign)) {
 			design = bloxdesign;
-			for (Bloxinstance inst: children) {
-				inst.design = bloxdesign;
-				inst.node.setDesign(bloxdesign);
+			for (Bloxinstance instance: children) {
+				instance.design = bloxdesign;
+				instance.node.setDesign(bloxdesign);
 			}
 		}
 	}
@@ -1363,15 +1354,15 @@ public class Bloxnode extends Bloxelement implements Visitable {
 
 	/**
 	 * Rename this node. The new node name must be unique within the design
-	 * @param string the new name of this node.
+	 * @param newname the new name of this node.
 	 * @throws BloxException if the new name is not unique
 	 */
-	public void rename(String string) throws BloxException {
-		if (allnodes.containsKey(string))
-			throw new BloxException("Cannot rename " + name + " to " + string + ": name exists");
+	public void rename(String newname) throws BloxException {
+		if (allnodes.containsKey(newname))
+			throw new BloxException("Cannot rename " + name + " to " + newname + ": name exists");
 		allnodes.remove(name);
-		name = string;
-		allnodes.put(string, this);
+		name = newname;
+		allnodes.put(newname, this);
 	}
 
 	/**

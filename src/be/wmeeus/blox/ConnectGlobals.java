@@ -9,7 +9,7 @@ package be.wmeeus.blox;
 public class ConnectGlobals implements Visitor {
 
 	public void visit(Bloxnode b) {
-		b.connectGlobals();
+		// Nothing to do
 	}
 
 	public void visit(Bloxinstance b) {
