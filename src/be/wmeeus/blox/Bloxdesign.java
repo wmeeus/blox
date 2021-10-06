@@ -84,7 +84,7 @@ public class Bloxdesign extends Bloxnode {
 	}
 
 	/**
-	 * Reads a design from a file. JSON supported, text file support may be broken.
+	 * Reads a design from a JSON file.
 	 * @param file the filename
 	 * @return the design
 	 * @throws BloxException
@@ -96,11 +96,9 @@ public class Bloxdesign extends Bloxnode {
 		Bloxdesign design = null;
 		try {
 			if (file.endsWith(".json")) {
-				JSONObject o = new JSONObject(new JSONTokener(new FileInputStream(file)));
-				if (o.has("design")) {
-					design = new Bloxdesign(o.getJSONObject("design"));
-					//					design.accept(new ConnectGlobals());
-					//					design.accept(new ConnectNodes());
+				JSONObject json_object = new JSONObject(new JSONTokener(new FileInputStream(file)));
+				if (json_object.has("design")) {
+					design = new Bloxdesign(json_object.getJSONObject("design"));
 				} else {
 					throw new BloxException("JSON doesn't contain a design");
 				}
