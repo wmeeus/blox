@@ -607,7 +607,7 @@ public class Bloxnode extends Bloxelement implements Visitable {
 				}
 				if (port.type != null) entity.addPackage(port.type.getVHDLpackage());
 				if (port.direction == null) {
-					System.err.println("**warning** NULL direction in port " + port.name + " of " + toString() + ", assuming master");
+					System.err.println("**warning** NULL direction in port " + port.name + " of " + toString() + ", assuming output/master");
 					port.direction = "master";
 				}
 
@@ -998,7 +998,7 @@ public class Bloxnode extends Bloxelement implements Visitable {
 		boolean needsignal = conn.needsSignal();
 		if (!needsignal) {
 			Bloxendpoint ept = conn.getPort();
-			VHDLsymbol vp = entity.get(ept.port.getVHDLname() + (bp!=null?("_" + bp.name):"") + suffix);
+			VHDLsymbol vp = entity.get(ept.port.getHDLname() + (bp!=null?("_" + bp.name):"") + suffix);
 			if (vp != null) {
 				for (Bloxendpoint ep: conn.endpoints) {
 					if (!ep.isPort()) {
@@ -1141,7 +1141,7 @@ public class Bloxnode extends Bloxelement implements Visitable {
 
 			if (ep.isPort()) {
 				//				System.err.println("Connect port: " + ep);
-				VHDLsymbol vp = entity.get(ep.port.getVHDLname() + (bp!=null?("_" + bp.name):"") + suffix);
+				VHDLsymbol vp = entity.get(ep.port.getHDLname() + (bp!=null?("_" + bp.name):"") + suffix);
 				if (vp != null) {
 					if (vp instanceof VHDLport) {
 						VHDLport vport = (VHDLport)vp;
@@ -1158,7 +1158,7 @@ public class Bloxnode extends Bloxelement implements Visitable {
 						throw new BloxException("*Bloxnode::vhdlConnectBusPort* not expecting " + vp.getClass().getName());
 					}
 				} else {
-					System.err.println("VHDLname " + ep.port.getVHDLname() + " bp " + " suffix " + suffix);
+					System.err.println("VHDLname " + ep.port.getHDLname() + " bp " + " suffix " + suffix);
 					System.err.println("*Bloxnode::vhdlConnectBusPort* symbol not found in " + name + ": " + ep.port.name + (bp!=null?("_" + bp.name):"") + suffix);
 				}
 
@@ -1179,7 +1179,7 @@ public class Bloxnode extends Bloxelement implements Visitable {
 				// master or slave?
 				Bloxnode cnode = ep.getLast();
 				boolean busclock = false, masterclock = false;
-				String portbase = ep.port.getVHDLname();
+				String portbase = ep.port.getHDLname();
 				String portname = ep.port.name;
 				if (portname.endsWith("_clk") && conn.type != Bloxbus.WIRE) {
 					int l = ep.port.name.length();
@@ -1207,7 +1207,7 @@ public class Bloxnode extends Bloxelement implements Visitable {
 				}
 
 				String fullportname = null;
-				if (ep.port.getVHDLname().isEmpty() && portprefix.endsWith("_")) {
+				if (ep.port.getHDLname().isEmpty() && portprefix.endsWith("_")) {
 					fullportname = portprefix.substring(0, portprefix.length() - 1) + ((bp==null||bp.name.length()==0)?"":("_" + bp.name));
 				} else {
 					if (portbase.startsWith(portprefix)) portprefix = "";
@@ -1223,7 +1223,7 @@ public class Bloxnode extends Bloxelement implements Visitable {
 					}
 				}
 
-				if (ep.port.getVHDLname().isEmpty() && portprefix.endsWith("_")) {
+				if (ep.port.getHDLname().isEmpty() && portprefix.endsWith("_")) {
 					fullportname = portprefix.substring(0, portprefix.length() - 1) + ((bp==null||bp.name.length()==0)?"":("_" + bp.name));
 				} else {
 					if (portbase.startsWith(portprefix)) portprefix = "";

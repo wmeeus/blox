@@ -168,16 +168,16 @@ public class Bloxport extends Bloxelement {
 	}
 
 	/**
-	 * Returns the VHDL name of this port
-	 * @return the VHDL name of this port
+	 * Returns the HDL name of this port
+	 * @return the HDL name of this port
 	 */
-	public String getVHDLname() {
-		if (type.equals(Bloxbus.CLKRST)) {
-			if (name.equals("clk")) return "";
-			if (name.endsWith("_clk")) 
-				return name.substring(0, name.length() - 4);
-		}
-		return name;
+	public String getHDLname() {
+//		if (type.equals(Bloxbus.CLKRST)) {
+//			if (name.equals("clk")) return "";
+//			if (name.endsWith("_clk")) 
+//				return name.substring(0, name.length() - 4);
+//		}
+		return hdlname;
 	}
 
 	/**

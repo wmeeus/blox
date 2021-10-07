@@ -30,49 +30,49 @@ public class Bloxdesign extends Bloxnode {
 
 	/**
 	 * Read a design from a JSON object
-	 * @param o the JSON object
+	 * @param json_object the JSON object
 	 * @throws BloxException
 	 */
-	public Bloxdesign(JSONObject o) throws BloxException {
-		super(o);
-		if (o.has("clocks")) {
-			JSONArray ca = o.getJSONArray("clocks");
-			for (Object co: ca) {
-				if (co instanceof JSONObject) {
-					JSONObject chd = (JSONObject)co;
+	public Bloxdesign(JSONObject json_object) throws BloxException {
+		super(json_object);
+		if (json_object.has("clocks")) {
+			JSONArray clocks_array = json_object.getJSONArray("clocks");
+			for (Object clock_object: clocks_array) {
+				if (clock_object instanceof JSONObject) {
+					JSONObject clock_json_object = (JSONObject)clock_object;
 					if (global_connections == null)
 						global_connections = new Hashtable<String, BloxGlobalConn>();
-					BloxGlobalConn global_connection = new BloxGlobalConn(chd);
+					BloxGlobalConn global_connection = new BloxGlobalConn(clock_json_object);
 					global_connections.put(global_connection.name, global_connection);
 					addConnection(global_connection);
 				} else {
-					System.err.println("Clock: skipping object of class " + co.getClass().getName());
+					System.err.println("Clock: skipping object of class " + clock_object.getClass().getName());
 				}
 			}
 		} else {
 			System.out.println("design " + name + ": no clocks");
 		}
-		if (o.has("globals")) {
-			JSONArray ca = o.getJSONArray("globals");
-			for (Object co: ca) {
-				if (co instanceof JSONObject) {
-					JSONObject chd = (JSONObject)co;
+		if (json_object.has("globals")) {
+			JSONArray globals_array = json_object.getJSONArray("globals");
+			for (Object globals_object: globals_array) {
+				if (globals_object instanceof JSONObject) {
+					JSONObject globals_json_object = (JSONObject)globals_object;
 					if (global_connections == null)
 						global_connections = new Hashtable<String, BloxGlobalConn>();
-					BloxGlobalConn gc = new BloxGlobalConn(chd);
-					global_connections.put(gc.name, gc);
-					addConnection(gc);
+					BloxGlobalConn new_global_connection = new BloxGlobalConn(globals_json_object);
+					global_connections.put(new_global_connection.name, new_global_connection);
+					addConnection(new_global_connection);
 				} else {
-					System.err.println("Clock: skipping object of class " + co.getClass().getName());
+					System.err.println("Clock: skipping object of class " + globals_object.getClass().getName());
 				}
 			}
 		} else {
 			System.out.println("design " + name + ": no globals");
 		}
 		design = this;
-		for (Bloxinstance inst: children) {
-			inst.setDesign(this);
-			inst.node.setDesign(this);
+		for (Bloxinstance instance: children) {
+			instance.setDesign(this);
+			instance.node.setDesign(this);
 		}
 	}
 

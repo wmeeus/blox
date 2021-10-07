@@ -14,7 +14,12 @@ public class Bloxelement {
 	 * Element name
 	 */
 	String name;
-	
+
+	/**
+	 * Element name in HDL
+	 */
+	String hdlname = null;
+
 	/**
 	 * Number of elements (e.g. array size)
 	 */
@@ -185,5 +190,22 @@ public class Bloxelement {
 	 */
 	public String getName() {
 		return name;
+	}
+
+	/**
+	 * Returns the HDL name of this element. If no particular HDL name has been set, the HDL name is equal to the name.
+	 * @return the HDL name of this element.
+	 */
+	public String getHDLname() {
+		if (hdlname != null) return hdlname;
+		return name;
+	}
+
+	/**
+	 * Set the HDL name of this object
+	 * @param new_name the HDL name
+	 */
+	public void setHDLname(String new_name) {
+		hdlname = new_name;
 	}
 }
