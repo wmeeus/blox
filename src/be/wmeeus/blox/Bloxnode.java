@@ -600,7 +600,7 @@ public class Bloxnode extends Bloxelement implements Visitable {
 			VHDLarchitecture architecture = new VHDLarchitecture("netlist", entity); 
 
 			for (Bloxport port: ports) {
-				//				System.err.println("  " + p + " " + (p!=null?p.repeat:""));
+//				System.err.println("  " + port + " " + (port!=null?port.repeat:""));
 				if (port == null) {
 					System.err.println("NULL port in " + toString());
 					continue;
@@ -618,45 +618,39 @@ public class Bloxnode extends Bloxelement implements Visitable {
 					entity.add(port_generic);
 				}
 
-				// TODO handle HDL name in Bloxport class
-				String port_name = port.name;
-				if (port_name.endsWith("_clk") && port.type != Bloxbus.WIRE) {
-					port_name = port_name.substring(0, port_name.length() - 4);
-				}
-
 				// TODO repeat vs. array
 				for (int i = 0; i < port.repeat; i++) {
-					String suffix = "";
-					if (port.repeat > 1) suffix = "_" + i;
+					String repeat_suffix = "";
+					if (port.repeat > 1) repeat_suffix = "_" + i;
 					if (port.type.isWire()) {
 						if (!port.isArrayport()) {
-							entity.add(new VHDLport(port_name, (isslave?"in":"out"), VHDLstd_logic.STD_LOGIC));
+							entity.add(new VHDLport(port.name, (isslave?"in":"out"), VHDLstd_logic.STD_LOGIC));
 						} else {
-							entity.add(new VHDLport(port_name, (isslave?"in":"out"), new VHDLstd_logic_vector(port_generic)));
+							entity.add(new VHDLport(port.name, (isslave?"in":"out"), new VHDLstd_logic_vector(port_generic)));
 						}
 					} else if (port.type.isVector()) {
-						entity.add(new VHDLport(port_name, (isslave?"in":"out"), new VHDLstd_logic_vector(port.type.getVectorWidth())));
+						entity.add(new VHDLport(port.name, (isslave?"in":"out"), new VHDLstd_logic_vector(port.type.getVectorWidth())));
 					} else {
 						//						System.err.println("aie " + p.type + " in node " + name);
-						for (Bloxbusport bp: port.type.ports) {
+						for (Bloxbusport bus_port: port.type.ports) {
 							//							System.err.println("  " + p + " " + i + " " + (p!=null?p.repeat:"" + " " + bp));
-							String bpname = ((bp.name.length()==0)?"":"_"+bp.name);
+							String bus_port_name = ((bus_port.name.length()==0) ? "" : bus_port.name);
 							for (int j = 0; j < (port.type.isRing()?2:1); j++) {
-								String ptname = port_name + bpname + suffix;
+								String port_name = Bloxconnection.HDLname(port.name, bus_port_name, port.type) + repeat_suffix;
 								boolean isslave_p = isslave;
 								if (port.type.isRing()) {
 									if (j == 0) {
-										ptname += "_up";
+										port_name += "_up";
 										isslave_p = true;
 									} else {
-										ptname += "_dn";
+										port_name += "_dn";
 										isslave_p = false;
 									}
 								}
-								if (!port.isArrayport() || !bp.fanout_array) {
-									entity.add(new VHDLport(ptname, bp.enslave(isslave_p), bp.getVHDLtype()));
+								if (!port.isArrayport() || !bus_port.fanout_array) {
+									entity.add(new VHDLport(port_name, bus_port.enslave(isslave_p), bus_port.getVHDLtype()));
 								} else {
-									entity.add(new VHDLport(ptname, bp.enslave(isslave_p), bp.getVHDLarrayType(port_generic)));
+									entity.add(new VHDLport(port_name, bus_port.enslave(isslave_p), bus_port.getVHDLarrayType(port_generic)));
 								}
 							}
 						}
@@ -668,44 +662,44 @@ public class Bloxnode extends Bloxelement implements Visitable {
 			ArrayList<Integer> ldom = null;
 
 			instance_translation_table = new Hashtable<Bloxinstance, ArrayList<VHDLinstance> >();  
-			for (Bloxinstance inst: children) {
-				VHDLentity ee = inst.node.vhdl();
-				ArrayList<VHDLinstance> ttlist = new ArrayList<VHDLinstance>();
-				instance_translation_table.put(inst,  ttlist);
-				for (int i = 0; i < inst.repeat; i++) {
-					VHDLinstance vi = new VHDLinstance(inst.name + ((inst.repeat < 2)?"":("_"+i)), ee);
-					architecture.add(vi);
-					ttlist.add(vi);
-					if (instances.containsKey(inst.node)) {
-						instances.get(inst.node).add(vi);
+			for (Bloxinstance instance: children) {
+				VHDLentity instance_entity = instance.node.vhdl();
+				ArrayList<VHDLinstance> translation_table_list = new ArrayList<VHDLinstance>();
+				instance_translation_table.put(instance, translation_table_list);
+				for (int count = 0; count < instance.repeat; count++) {
+					VHDLinstance vhdl_instance = new VHDLinstance(instance.name + ((instance.repeat < 2)?"":("_"+count)), instance_entity);
+					architecture.add(vhdl_instance);
+					translation_table_list.add(vhdl_instance);
+					if (instances.containsKey(instance.node)) {
+						instances.get(instance.node).add(vhdl_instance);
 					} else {
-						ArrayList<VHDLinstance> ai = new ArrayList<VHDLinstance>();
-						ai.add(vi);
-						instances.put(inst.node, ai);
+						ArrayList<VHDLinstance> vhdl_instance_array = new ArrayList<VHDLinstance>();
+						vhdl_instance_array.add(vhdl_instance);
+						instances.put(instance.node, vhdl_instance_array);
 					}
-					for (Mparameter mp: inst.paramap.values()) {
-						vi.map(mp.getSymbol().getName(), new VHDLvalue(mp.getValue()));
+					for (Mparameter parameter: instance.parameter_map.values()) {
+						vhdl_instance.map(parameter.getSymbol().getName(), new VHDLvalue(parameter.getValue()));
 					}
 				}
 			}
 
-			if (localconnections != null) for (Bloxconnection conn: localconnections) {
-				boolean paramized = false;
-				ArrayList<Integer> pdom = null;
-				if (conn.parameter != null) {
-					paramized = true;
-					for (Bloxendpoint ep: conn.endpoints) {
-						Mnode indp = ep.getIndex(0);
-						if (indp == null) indp = ep.portindex; // TODO is this OK?
-						if (indp != null) {
+			if (localconnections != null) for (Bloxconnection connection: localconnections) {
+				boolean has_parameter = false;
+				ArrayList<Integer> parameter_domain = null;
+				if (connection.parameter != null) {
+					has_parameter = true;
+					for (Bloxendpoint endpoint: connection.endpoints) {
+						Mnode endpoint_index = endpoint.getIndex(0);
+						if (endpoint_index == null) endpoint_index = endpoint.portindex; // TODO is this OK?
+						if (endpoint_index != null) {
 							try {
-								ldom = conn.getParameter().domain(indp);
-								if (pdom == null) {
-									pdom = ldom;
+								ldom = connection.getParameter().domain(endpoint_index);
+								if (parameter_domain == null) {
+									parameter_domain = ldom;
 								} else {
 									for (Integer i: ldom) {
-										if (!pdom.contains(i)) {
-											pdom.add(i);
+										if (!parameter_domain.contains(i)) {
+											parameter_domain.add(i);
 											//System.err.println("*Warning* different domains in " + this);
 										}
 									}
@@ -718,23 +712,25 @@ public class Bloxnode extends Bloxelement implements Visitable {
 					}
 				}
 
-				if (conn.haswire) {
-					if (conn.getType().isRing()) {
-						vhdlConnectRing(architecture, instances, conn);
-					} else if (conn.getType().isWire() || conn.getType().isVector()) {
+				if (connection.haswire) { // TODO hardcoded true now...
+					if (connection.getType().isRing()) {
+						vhdlConnectRing(architecture, instances, connection);
+					} else if (connection.getType().isWire() || connection.getType().isVector()) {
 						int j = 0;
-						if (pdom == null) {
-							vhdlConnectBusport(architecture, instances, conn, paramized, null, -1, -1, null);
-						} else for (Integer i: pdom) {
-							vhdlConnectBusport(architecture, instances, conn, paramized, null, i.intValue(), j++, ldom);
+						if (parameter_domain == null) {
+							vhdlConnectBusport(architecture, instances, connection, has_parameter, null, -1, -1, null);
+						} else for (Integer parameter_value: parameter_domain) {
+							vhdlConnectBusport(architecture, instances, connection, has_parameter, null,
+									parameter_value.intValue(), j++, ldom);
 						}
 					} else {					
-						for (Bloxbusport bp: conn.getType().ports) {
+						for (Bloxbusport busport: connection.getType().ports) {
 							int j = 0;
-							if (pdom == null) {
-								vhdlConnectBusport(architecture, instances, conn, paramized, bp, -1, -1, null);
-							} else for (Integer i: pdom) {
-								vhdlConnectBusport(architecture, instances, conn, paramized, bp, i.intValue(), j++, ldom);
+							if (parameter_domain == null) {
+								vhdlConnectBusport(architecture, instances, connection, has_parameter, busport, -1, -1, null);
+							} else for (Integer parameter_value: parameter_domain) {
+								vhdlConnectBusport(architecture, instances, connection, has_parameter, busport,
+										parameter_value.intValue(), j++, ldom);
 							}
 						}
 					}
@@ -969,62 +965,63 @@ public class Bloxnode extends Bloxelement implements Visitable {
 
 	/**
 	 * Connect a port of a bus (all endpoints)
-	 * @param a
+	 * @param architecture
 	 * @param instances
-	 * @param conn
-	 * @param paramized
-	 * @param bp
+	 * @param connection
+	 * @param has_parameter
+	 * @param bus_port
 	 * @param parseq
 	 * @param seq
 	 * @param ldom
 	 * @throws VHDLexception
 	 * @throws BloxException
 	 */
-	private void vhdlConnectBusport(VHDLarchitecture a, Hashtable<Bloxnode, ArrayList<VHDLinstance>> instances,
-			Bloxconnection conn, boolean paramized, Bloxbusport bp, int parseq, int seq, 
+	private void vhdlConnectBusport(VHDLarchitecture architecture, Hashtable<Bloxnode, ArrayList<VHDLinstance>> instances,
+			Bloxconnection connection, boolean has_parameter, Bloxbusport bus_port, int parseq, int seq, 
 			ArrayList<Integer> ldom) throws VHDLexception, BloxException {
 
-		String suffix = "";
+		String count_suffix = "";
 		boolean bp_fanout_array = false;
 
 		// seq is sequence number (in domain values list) = always 0, 1, ...
 		// parseq is parameter value in current iteration
 		if (seq > -1) {
-			suffix = "_" + seq;
+			count_suffix = "_" + seq;
 		}
 
-		VHDLsignal bs = null;
+		VHDLsignal bus_signal = null;
 
-		boolean needsignal = conn.needsSignal();
+		boolean needsignal = connection.needsSignal();
 		if (!needsignal) {
-			Bloxendpoint ept = conn.getPort();
-			VHDLsymbol vp = entity.get(ept.port.getHDLname() + (bp!=null?("_" + bp.name):"") + suffix);
-			if (vp != null) {
-				for (Bloxendpoint ep: conn.endpoints) {
-					if (!ep.isPort()) {
-						if (ep.isMaster() || !bp_fanout_array || !(vp.getType() instanceof VHDLarray)) { 
-							vhdlConnectSingleBusport(a, instances, conn, paramized, bp, parseq, seq, 
-									ldom, ep, vp, conn.fanoutstart, suffix);
+			Bloxendpoint endpoint_port = connection.getPort();
+			VHDLsymbol vhdl_port_symbol = entity.get(endpoint_port.port.getHDLname() + (bus_port!=null?("_" + bus_port.name):"")
+					+ count_suffix);
+			if (vhdl_port_symbol != null) {
+				for (Bloxendpoint endpoint: connection.endpoints) {
+					if (!endpoint.isPort()) {
+						if (endpoint.isMaster() || !bp_fanout_array || !(vhdl_port_symbol.getType() instanceof VHDLarray)) { 
+							vhdlConnectSingleBusport(architecture, instances, connection, has_parameter, bus_port, parseq, seq, 
+									ldom, endpoint, vhdl_port_symbol, connection.fanoutstart, count_suffix);
 						} else {
-							vhdlConnectSingleBusport(a, instances, conn, paramized, bp, parseq, seq, 
-									ldom, ep, vp, conn.fanoutstart, suffix);
+							vhdlConnectSingleBusport(architecture, instances, connection, has_parameter, bus_port, parseq, seq, 
+									ldom, endpoint, vhdl_port_symbol, connection.fanoutstart, count_suffix);
 						}
 					}
 				}
 				return;
 			} else {
-				throw new BloxException("Connect without intermediate signal: port not found: " + ept);
+				throw new BloxException("Connect without intermediate signal: port not found: " + endpoint_port);
 			}
 		}
 
-		Bloxendpoint epm = conn.getMaster();
-		if (bp != null) {
-			bp_fanout_array = bp.fanout_array;
+		Bloxendpoint master_endpoint = connection.getMaster();
+		if (bus_port != null) {
+			bp_fanout_array = bus_port.fanout_array;
 			// TODO check whether to use an existing signal which may either be
 			// - a simple signal, if already mapped wire fanout
 			// - an indexed part of an array signal, if vector/array fanout  
-			if (bp.fanout_wire || bp.fanout_array) {
-				if (epm != null && !epm.isPort()) {
+			if (bus_port.fanout_wire || bus_port.fanout_array) {
+				if (master_endpoint != null && !master_endpoint.isPort()) {
 					String portsuffix = "";
 					//					if (ep.portindex != null) {
 					//						portsuffix = "_" + ep.portindex.eval(paramvalues);
@@ -1032,67 +1029,67 @@ public class Bloxnode extends Bloxelement implements Visitable {
 					//							iseq = 0; // wild assumption!
 					//						}
 					//					}
-					String portprefix = epm.getLast().masterprefix;
+					String portprefix = master_endpoint.getLast().masterprefix;
 					// in or out?
-					if (bp != null) {
-						if (bp.enslave(!epm.isMaster()).equals("in")) {
-							portprefix = epm.getLast().inputprefix + portprefix;
+					if (bus_port != null) {
+						if (bus_port.enslave(!master_endpoint.isMaster()).equals("in")) {
+							portprefix = master_endpoint.getLast().inputprefix + portprefix;
 						} else {
-							portprefix = epm.getLast().outputprefix + portprefix;
+							portprefix = master_endpoint.getLast().outputprefix + portprefix;
 						}
 					}
 					String fullportname = null;
-					if (epm.port.name.isEmpty() && portprefix.endsWith("_")) {
-						fullportname = portprefix.substring(0, portprefix.length() - 1) + (bp!=null?("_" + bp.name):"") + portsuffix;
+					if (master_endpoint.port.name.isEmpty() && portprefix.endsWith("_")) {
+						fullportname = portprefix.substring(0, portprefix.length() - 1) + (bus_port!=null?("_" + bus_port.name):"") + portsuffix;
 					} else {
-						fullportname = portprefix + epm.port.name + (bp!=null?("_" + bp.name):"") + portsuffix;
+						fullportname = portprefix + master_endpoint.port.name + (bus_port!=null?("_" + bus_port.name):"") + portsuffix;
 					}
-					ArrayList<VHDLinstance> insts = instances.get(epm.getLast());
+					ArrayList<VHDLinstance> insts = instances.get(master_endpoint.getLast());
 					if (insts.size() == 1) {
 						VHDLnode vn = insts.get(0).getmap(fullportname);
 						if (vn != null && (vn instanceof VHDLsignal)) {
-							bs = (VHDLsignal)vn;
+							bus_signal = (VHDLsignal)vn;
 						}
 					} else {
-						throw new BloxException("Multiple masters not supported: " + epm);
+						throw new BloxException("Multiple masters not supported: " + master_endpoint);
 					}
 				}				
 			}
 
-			if (bs == null) {
-				if (bp.fanout_array && epm != null && epm.port.isArrayport()) {
-					VHDLtype bt = bp.getVHDLtype();
-					VHDLtype at = new VHDLarray(bt.getName()+"_array", bt, 0, epm.fanout - 1);
-					bs = new VHDLsignal("s_" + conn.name + "_" + bp.name + suffix, at);
+			if (bus_signal == null) {
+				if (bus_port.fanout_array && master_endpoint != null && master_endpoint.port.isArrayport()) {
+					VHDLtype bt = bus_port.getVHDLtype();
+					VHDLtype at = new VHDLarray(bt.getName()+"_array", bt, 0, master_endpoint.fanout - 1);
+					bus_signal = new VHDLsignal("s_" + Bloxconnection.HDLname(connection.name, bus_port.name, connection.type) + count_suffix, at);
 				} else {
-					String infix = ((bp.name.length()==0)?"":"_");
-					bs = new VHDLsignal("s_" + conn.name + infix + bp.name + suffix, 
-							bp.getVHDLtype());
+					bus_signal = new VHDLsignal("s_" + Bloxconnection.HDLname(connection.name, bus_port.name, connection.type) + count_suffix, 
+							bus_port.getVHDLtype());
 				}
-				a.add(bs);
+				architecture.add(bus_signal);
 			}
 
 		} else {
 			// determine width from epm (as far as that's the relevant one)
-			if ((epm.port.type != null) && (epm.port.type.vectorwidth > 1)) {
-				bs = new VHDLsignal("s_" + conn.name + suffix,
-						VHDLstd_logic_vector.getVector(epm.port.type.vectorwidth));
+			if ((master_endpoint.port.type != null) && (master_endpoint.port.type.vectorwidth > 1)) {
+				bus_signal = new VHDLsignal("s_" + connection.name + count_suffix,
+						VHDLstd_logic_vector.getVector(master_endpoint.port.type.vectorwidth));
 			} else {			
-				bs = new VHDLsignal("s_" + conn.name + suffix, 
+				bus_signal = new VHDLsignal("s_" + connection.name + count_suffix, 
 						VHDLstd_logic.STD_LOGIC); // TODO std_logic_vector support
 			}
-			a.add(bs);
+			architecture.add(bus_signal);
 			//			System.err.println("VCBP3: bs = " + bs);
 		}
 
-		for (Bloxendpoint ep: conn.endpoints) {
+		for (Bloxendpoint endpoint: connection.endpoints) {
 			// TODO slave of array fanout 
-			if (ep.isMaster() || !bp_fanout_array || !(bs.getType() instanceof VHDLarray)) { 
-				vhdlConnectSingleBusport(a, instances, conn, paramized, bp, parseq, seq, 
-						ldom, ep, bs, conn.fanoutstart, suffix);
+			// TODO why am I conditionally doing the exact same thing?
+			if (endpoint.isMaster() || !bp_fanout_array || !(bus_signal.getType() instanceof VHDLarray)) { 
+				vhdlConnectSingleBusport(architecture, instances, connection, has_parameter, bus_port, parseq, seq, 
+						ldom, endpoint, bus_signal, connection.fanoutstart, count_suffix);
 			} else {
-				vhdlConnectSingleBusport(a, instances, conn, paramized, bp, parseq, seq, 
-						ldom, ep, bs, conn.fanoutstart, suffix);
+				vhdlConnectSingleBusport(architecture, instances, connection, has_parameter, bus_port, parseq, seq, 
+						ldom, endpoint, bus_signal, connection.fanoutstart, count_suffix);
 			}
 		}
 	}
@@ -1112,15 +1109,15 @@ public class Bloxnode extends Bloxelement implements Visitable {
 
 	/**
 	 * Connect a single endpoint of a bus
-	 * @param a
+	 * @param architecture
 	 * @param instances
-	 * @param conn
-	 * @param paramized
-	 * @param bp
+	 * @param connection
+	 * @param has_parameter
+	 * @param busport
 	 * @param parseq
 	 * @param seq
 	 * @param ldom
-	 * @param ep
+	 * @param endpoint
 	 * @param bs
 	 * @param fanoutstart
 	 * @param suffix
@@ -1128,76 +1125,76 @@ public class Bloxnode extends Bloxelement implements Visitable {
 	 * @throws VHDLexception
 	 * @throws BloxException
 	 */
-	private VHDLsignal vhdlConnectSingleBusport(VHDLarchitecture a, Hashtable<Bloxnode, ArrayList<VHDLinstance>> instances,
-			Bloxconnection conn, boolean paramized, Bloxbusport bp, int parseq, int seq, 
-			ArrayList<Integer> ldom, Bloxendpoint ep, VHDLnode bs, int fanoutstart, String suffix) throws VHDLexception, BloxException {
+	private VHDLsignal vhdlConnectSingleBusport(VHDLarchitecture architecture, Hashtable<Bloxnode, ArrayList<VHDLinstance>> instances,
+			Bloxconnection connection, boolean has_parameter, Bloxbusport busport, int parseq, int seq, 
+			ArrayList<Integer> ldom, Bloxendpoint endpoint, VHDLnode bs, int fanoutstart, String suffix) throws VHDLexception, BloxException {
 		try {
-			Hashtable<Msymbol, Integer> paramvalues = null;
-			if (conn.parameter != null) {
-				paramvalues = new Hashtable<Msymbol, Integer>();
+			Hashtable<Msymbol, Integer> parameter_values = null;
+			if (connection.parameter != null) {
+				parameter_values = new Hashtable<Msymbol, Integer>();
 				// this should be the only parameter value that we're handling in this method call!
-				paramvalues.put(conn.parameter.getSymbol(), parseq);
+				parameter_values.put(connection.parameter.getSymbol(), parseq);
 			}
 
-			if (ep.isPort()) {
+			if (endpoint.isPort()) {
 				//				System.err.println("Connect port: " + ep);
-				VHDLsymbol vp = entity.get(ep.port.getHDLname() + (bp!=null?("_" + bp.name):"") + suffix);
-				if (vp != null) {
-					if (vp instanceof VHDLport) {
-						VHDLport vport = (VHDLport)vp;
-						VHDLnode vpn = vp;
-						if (ep.portindex != null) {
-							vpn = new VHDLsubrange(vpn, Mvhdl.vhdl(ep.portindex, a));
+				VHDLsymbol vhdl_port_symbol = entity.get(endpoint.port.getHDLname() + (busport!=null?("_" + busport.name):"") + suffix);
+				if (vhdl_port_symbol != null) {
+					if (vhdl_port_symbol instanceof VHDLport) {
+						VHDLport vhdl_port = (VHDLport)vhdl_port_symbol;
+						VHDLnode vhdl_port_node = vhdl_port_symbol;
+						if (endpoint.portindex != null) {
+							vhdl_port_node = new VHDLsubrange(vhdl_port_node, Mvhdl.vhdl(endpoint.portindex, architecture));
 						}
-						if (vport.isIn()) {
-							a.add(new VHDLassign(bs, vpn));
+						if (vhdl_port.isIn()) {
+							architecture.add(new VHDLassign(bs, vhdl_port_node));
 						} else {
-							a.add(new VHDLassign(vpn, bs));
+							architecture.add(new VHDLassign(vhdl_port_node, bs));
 						}
 					} else {
-						throw new BloxException("*Bloxnode::vhdlConnectBusPort* not expecting " + vp.getClass().getName());
+						throw new BloxException("*Bloxnode::vhdlConnectBusPort* not expecting " + vhdl_port_symbol.getClass().getName());
 					}
 				} else {
-					System.err.println("VHDLname " + ep.port.getHDLname() + " bp " + " suffix " + suffix);
-					System.err.println("*Bloxnode::vhdlConnectBusPort* symbol not found in " + name + ": " + ep.port.name + (bp!=null?("_" + bp.name):"") + suffix);
+					System.err.println("VHDLname " + endpoint.port.getHDLname() + " bp " + " suffix " + suffix);
+					System.err.println("*Bloxnode::vhdlConnectBusPort* symbol not found in " + name + ": " + endpoint.port.name + (busport!=null?("_" + busport.name):"") + suffix);
 				}
 
 			} else { // ep is instance:port or node:port
 				int iseq = 0;
 				if (seq != -1) {
-					if (ep.getLastIndex() != null) {
-						iseq = ep.getLastIndex().eval(paramvalues).get();
+					if (endpoint.getLastIndex() != null) {
+						iseq = endpoint.getLastIndex().eval(parameter_values).get();
 						// todo use next() ?
 					} else {
 						iseq = seq; // ??
 					}
 
 				}
-				ArrayList<VHDLinstance> insts = instances.get(ep.getLast());
+				ArrayList<VHDLinstance> insts = instances.get(endpoint.getLast());
 
 				String portprefix = "";
 				// master or slave?
-				Bloxnode cnode = ep.getLast();
+				Bloxnode cnode = endpoint.getLast();
 				boolean busclock = false, masterclock = false;
-				String portbase = ep.port.getHDLname();
-				String portname = ep.port.name;
-				if (portname.endsWith("_clk") && conn.type != Bloxbus.WIRE) {
-					int l = ep.port.name.length();
-					portbase = ep.port.name.substring(0, l-4);
+				String portbase = endpoint.port.getHDLname();
+				String portname = endpoint.port.name;
+				if (portname.endsWith("_clk") && connection.type != Bloxbus.WIRE) {
+					int l = endpoint.port.name.length();
+					portbase = endpoint.port.name.substring(0, l-4);
 					Bloxport clport = cnode.getPort(portbase);
 					if (clport != null) {
 						busclock = true;
 						masterclock = clport.isMaster();
 					}
 				}
-				if ((!busclock && ep.isMaster()) || (busclock && masterclock)) {
+				if ((!busclock && endpoint.isMaster()) || (busclock && masterclock)) {
 					portprefix += cnode.masterprefix;
 				} else {
 					portprefix += cnode.slaveprefix;
 				}
 				// in or out?
-				if (bp != null) {
-					if (bp.enslave(!ep.isMaster()).equals("in")) {
+				if (busport != null) {
+					if (busport.enslave(!endpoint.isMaster()).equals("in")) {
 						portprefix = cnode.inputprefix + portprefix;
 					} else {
 						portprefix = cnode.outputprefix + portprefix;
@@ -1206,29 +1203,15 @@ public class Bloxnode extends Bloxelement implements Visitable {
 					// TODO figure out what to do
 				}
 
-				String fullportname = null;
-				if (ep.port.getHDLname().isEmpty() && portprefix.endsWith("_")) {
-					fullportname = portprefix.substring(0, portprefix.length() - 1) + ((bp==null||bp.name.length()==0)?"":("_" + bp.name));
-				} else {
-					if (portbase.startsWith(portprefix)) portprefix = "";
-					fullportname = portprefix + portbase + ((bp==null||bp.name.length()==0)?"":("_" + bp.name));
-				}
-//				if (inst.)
-				
 				String portsuffix = "";
-				if (ep.portindex != null) {
-					portsuffix = "_" + ep.portindex.eval(paramvalues);
-					if (ep.getLastIndex() == null) {
+				if (endpoint.portindex != null) {
+					portsuffix = "_" + endpoint.portindex.eval(parameter_values);
+					if (endpoint.getLastIndex() == null) {
 						iseq = 0; // wild assumption!
 					}
 				}
 
-				if (ep.port.getHDLname().isEmpty() && portprefix.endsWith("_")) {
-					fullportname = portprefix.substring(0, portprefix.length() - 1) + ((bp==null||bp.name.length()==0)?"":("_" + bp.name));
-				} else {
-					if (portbase.startsWith(portprefix)) portprefix = "";
-					fullportname = portprefix + portbase + ((bp==null||bp.name.length()==0)?"":("_" + bp.name));
-				}
+				String fullportname = portprefix + Bloxconnection.HDLname(portbase, (busport!=null)?(busport.name):(""), connection.type);
 				
 				// TODO figure out whether in index should be interpreted as a proper index or an expansion
 				//      i.e. pname(k) or pname_k
@@ -1239,12 +1222,12 @@ public class Bloxnode extends Bloxelement implements Visitable {
 				} else {
 					fullportname += portsuffix;
 				}
-				
+
 				// does iseq refer to the instance or to the port? or both?
 				VHDLnode n = bs;
-				if (!paramized && insts.size() > 1) {
+				if (!has_parameter && insts.size() > 1) {
 					for (VHDLinstance inst: insts) {
-						if (ep.getConnectNode() || inst.getName().equals(ep.getLastInst().getName())) {
+						if (endpoint.getConnectNode() || inst.getName().equals(endpoint.getLastInst().getName())) {
 							if (fanoutstart > -1) {
 								n = new VHDLsubrange(bs, fanoutstart++);
 							}
@@ -1253,7 +1236,7 @@ public class Bloxnode extends Bloxelement implements Visitable {
 					}
 				} else {
 					VHDLinstance inst = insts.get(iseq);
-					if (!ep.isMaster() && fanoutstart > -1) {
+					if (!endpoint.isMaster() && fanoutstart > -1) {
 						n = new VHDLsubrange(bs, fanoutstart);
 					}
 					inst.map(fullportname, n);

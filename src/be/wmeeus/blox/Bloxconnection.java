@@ -533,6 +533,10 @@ public class Bloxconnection {
 		return true;
 	}
 	
+	public String getHDLname(String suffix) {
+		return HDLname(name, suffix, type);
+	}
+
 	/**
 	 * Makes and returns a HDL name from this connection's name and bus signal suffix (if any). Without a suffix,
 	 * the name is returned. Some special handling exists for clock/reset signals to avoid awkward names.
@@ -541,7 +545,7 @@ public class Bloxconnection {
 	 *   of a bus
 	 * @return the HDL name
 	 */
-	public String HDLname(String suffix) {
+	public static String HDLname(String name, String suffix, Bloxbus type) {
 		if (suffix == null || suffix.isEmpty()) {
 			return name;
 		}

@@ -42,7 +42,7 @@ public class Bloxinstance extends Bloxelement {
 	/**
 	 * The parameter (generic) map of this instance
 	 */
-	Hashtable<String, Mparameter> paramap = new Hashtable<String, Mparameter>(); 
+	Hashtable<String, Mparameter> parameter_map = new Hashtable<String, Mparameter>();
 
 	/**
 	 * The port map of this instance
@@ -115,7 +115,7 @@ public class Bloxinstance extends Bloxelement {
 	public void map(String pname, int pval) throws BloxException {
 		try {
 			Mparameter p = new Mparameter(pname, pval);
-			paramap.put(pname, p);
+			parameter_map.put(pname, p);
 		} catch(Mexception ex) {
 			ex.printStackTrace();
 			throw new BloxException(ex.toString());

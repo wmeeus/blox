@@ -39,16 +39,16 @@ public class Bloxport extends Bloxelement {
 		direction = d;
 		type = t;
 
-		if (t != null && t.equals(Bloxbus.CLKRST)) {
-			if (!name.endsWith("_clk")) {
-				//				name = name.substring(0, name.length() - 4);
-				if (name.isEmpty()) {
-					name = "clk";
-				} else {
-					name += "_clk";
-				}
-			}
-		}
+//		if (t != null && t.equals(Bloxbus.CLKRST)) {
+//			if (!name.endsWith("_clk")) {
+//				//				name = name.substring(0, name.length() - 4);
+//				if (name.isEmpty()) {
+//					name = "clk";
+//				} else {
+//					name += "_clk";
+//				}
+//			}
+//		}
 	}
 
 	/**
@@ -177,7 +177,8 @@ public class Bloxport extends Bloxelement {
 //			if (name.endsWith("_clk")) 
 //				return name.substring(0, name.length() - 4);
 //		}
-		return hdlname;
+		if (hdlname != null) return hdlname;
+		return name;
 	}
 
 	/**
