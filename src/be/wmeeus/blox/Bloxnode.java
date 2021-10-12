@@ -994,7 +994,7 @@ public class Bloxnode extends Bloxelement implements Visitable {
 		boolean needsignal = connection.needsSignal();
 		if (!needsignal) {
 			Bloxendpoint endpoint_port = connection.getPort();
-			VHDLsymbol vhdl_port_symbol = entity.get(endpoint_port.port.getHDLname() + (bus_port!=null?("_" + bus_port.name):"")
+			VHDLsymbol vhdl_port_symbol = entity.get(Bloxconnection.HDLname(endpoint_port.port.name, bus_port.name, connection.type)
 					+ count_suffix);
 			if (vhdl_port_symbol != null) {
 				for (Bloxendpoint endpoint: connection.endpoints) {

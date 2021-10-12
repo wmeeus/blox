@@ -63,7 +63,7 @@ public class Bloxdesign extends Bloxnode {
 					global_connections.put(new_global_connection.name, new_global_connection);
 					addConnection(new_global_connection);
 				} else {
-					System.err.println("Clock: skipping object of class " + globals_object.getClass().getName());
+					System.err.println("Global signals: skipping object of class " + globals_object.getClass().getName());
 				}
 			}
 		} else {
@@ -125,6 +125,7 @@ public class Bloxdesign extends Bloxnode {
 				JSONObject o = new JSONObject(new JSONTokener(new FileInputStream(args[0])));
 				if (o.has("design")) {
 					design = new Bloxdesign(o.getJSONObject("design"));
+					design.connectGlobals();
 					design.accept(new ConnectGlobals());
 					System.out.println("** start connecting signals **");
 					design.accept(new ConnectSignals());

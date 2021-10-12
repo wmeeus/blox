@@ -38,17 +38,6 @@ public class Bloxport extends Bloxelement {
 		parent = n;
 		direction = d;
 		type = t;
-
-//		if (t != null && t.equals(Bloxbus.CLKRST)) {
-//			if (!name.endsWith("_clk")) {
-//				//				name = name.substring(0, name.length() - 4);
-//				if (name.isEmpty()) {
-//					name = "clk";
-//				} else {
-//					name += "_clk";
-//				}
-//			}
-//		}
 	}
 
 	/**
@@ -68,20 +57,6 @@ public class Bloxport extends Bloxelement {
 					t = "vector(" + o.getInt("width") + ")";
 				}
 				type = Bloxbus.get(t);
-				if (type == Bloxbus.CLKRST) {
-					if (name.endsWith("clk")) {
-						name = name.substring(0, name.length() - 3);
-					}
-					if (name.endsWith("_")) {
-						name = name.substring(0, name.length() - 1);
-					}
-					if (name.startsWith("clk")) {
-						name = name.substring(3);
-					}
-					if (name.startsWith("_")) {
-						name = name.substring(1);
-					}
-				}
 			}
 			if (o.has("direction")) {
 				direction = o.getString("direction");
@@ -160,10 +135,6 @@ public class Bloxport extends Bloxelement {
 	 */
 	public boolean nameEquals(String n) {
 		if (name.equals(n)) return true;
-//		if (type.equals(Bloxbus.CLKRST)) {
-//			if (name.equals(n + "_clk")) return true;
-//			if (name.equals("clk") && n.isEmpty()) return true;
-//		}
 		return false;
 	}
 
@@ -172,11 +143,6 @@ public class Bloxport extends Bloxelement {
 	 * @return the HDL name of this port
 	 */
 	public String getHDLname() {
-//		if (type.equals(Bloxbus.CLKRST)) {
-//			if (name.equals("clk")) return "";
-//			if (name.endsWith("_clk")) 
-//				return name.substring(0, name.length() - 4);
-//		}
 		if (hdlname != null) return hdlname;
 		return name;
 	}

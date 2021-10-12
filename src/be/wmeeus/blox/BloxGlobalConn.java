@@ -38,14 +38,6 @@ public class BloxGlobalConn extends Bloxconnection {
 		} else if (hasreset) {
 			type = Bloxbus.CLKRST;
 		} // else : type will be determined from endpoints at a later point
-//		if (type == Bloxbus.CLKRST) {
-//			if (name.endsWith("clk")) {
-//				name = name.substring(0, name.length() - 3);
-//			}
-//			if (name.endsWith("_")) {
-//				name = name.substring(0, name.length() - 1);
-//			}
-//		}
 	}
 
 	/**
