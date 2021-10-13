@@ -194,35 +194,36 @@ public class Bloxinstance extends Bloxelement {
 
 	/**
 	 * Find a particular endpoint
-	 * @param nn a String representation of the endpoint, formatted as node_name:port_name
+	 * @param search_string a String representation of the endpoint, formatted as node_name:port_name
 	 * @return the requested endpoint
 	 * @throws BloxException
 	 */
-	public Bloxendpoint findEndpoint(String nn) throws BloxException {
-		int sep = nn.indexOf(":");
-		if (sep<1) throw new BloxException ("Expecting a path, got " + nn + " at " + toString());
-		String ln = nn.substring(0, sep);
-		String dp = nn.substring(sep + 1);
-		String idx = null;
-		sep = ln.indexOf("(");
-		if (sep > -1) {
-			idx = ln.substring(sep+1,  ln.indexOf(")"));
-			ln = ln.substring(0, sep);
+	public Bloxendpoint findEndpoint(String search_string) throws BloxException {
+		int separator_index = search_string.indexOf(":");
+		if (separator_index<1) throw new BloxException ("Expecting a path, got " + search_string + " at " + toString());
+		String node_name = search_string.substring(0, separator_index);
+		String port_name = search_string.substring(separator_index + 1);
+		String port_index = null;
+		separator_index = node_name.indexOf("(");
+		if (separator_index > -1) {
+			port_index = node_name.substring(separator_index+1,  node_name.indexOf(")"));
+			node_name = node_name.substring(0, separator_index);
 		}
 
-		if (name.equals(ln) || node.name.equals(ln)) {
-			Bloxendpoint ept = node.findEndpoint(dp);
-			if (ept == null) {
+		Bloxendpoint endpoint = null;
+		if (name.equals(node_name) || node.name.equals(node_name)) {
+			endpoint = node.findEndpoint(port_name);
+			if (endpoint == null) {
 				throw new BloxException("Not expecting null endpoint at " + toString());
 			}
-			ept.add(this, idx, true);
-			return ept;
+			endpoint.add(this, port_index, true);
+			return endpoint;
 		}
-		Bloxendpoint ep = node.findEndpoint(nn); // recurse if appropriate // but add ourself ...
-		if (ep != null) {
-			ep.add(this, null,  true);			
+		endpoint = node.findEndpoint(search_string); // recurse if appropriate // but add ourself ...
+		if (endpoint != null) {
+			endpoint.add(this, null, true);
 		}
-		return ep;
+		return endpoint;
 	}
 
 	/**
