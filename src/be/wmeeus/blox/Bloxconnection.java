@@ -88,61 +88,62 @@ public class Bloxconnection {
 			String endpoint_string = (String)endpoint_object;
 			if (!endpoint_string.contains(":")) throw new BloxException("Invalid connection endpoint: " + endpoint_string);
 
-			String pn = endpoint_string;
+			String portname = endpoint_string;
 
-			Bloxport p = null;
-			Bloxnode nb = null;
-			Bloxendpoint ept = null;
+			Bloxport port = null;
+			Bloxendpoint endpoint = null;
 
-			if (pn.startsWith(":")) {
+			if (portname.startsWith(":")) {
 				// local port
-				nb = node; // port of the current block
 				hasport = true;
-				String pnn = pn.substring(1);
-				String idx = null;
-				if (pnn.contains("(")) {
-					int ob = pnn.indexOf("(");
-					int cb = pnn.indexOf(")");
-					if (cb <= ob) throw new BloxException("Invalid port name: " + pn);
-					idx = pnn.substring(ob+1, cb);
-					pnn = pnn.substring(0, ob);
+				String local_port_name = portname.substring(1);
+				String port_range = null;
+				if (local_port_name.contains("(")) {
+					int open_bracket_position = local_port_name.indexOf("(");
+					int close_bracket_position = local_port_name.indexOf(")");
+					if (close_bracket_position <= open_bracket_position) throw new BloxException("Invalid port name: " + portname);
+					port_range = local_port_name.substring(open_bracket_position+1, close_bracket_position);
+					local_port_name = local_port_name.substring(0, open_bracket_position);
 				}
-				p = nb.getPort(pnn);
-				ept = new Bloxendpoint(p);
+				port = node.getPort(local_port_name);
+				endpoint = new Bloxendpoint(port);
 				try {
-					ept.portindex = Mnode.mknode(idx);
+					endpoint.portindex = Mnode.mknode(port_range);
 				} catch (Mexception ex) {
 					ex.printStackTrace();
 					throw new BloxException(ex.toString());
 				}
 			} else {
-				ept = node.findEndpoint(pn);
-				if (ept == null) {
-					throw new BloxException("Endpoint " + pn + " not found in " + node);
+				endpoint = node.findEndpoint(portname);
+				if (endpoint == null) {
+					// TODO feature: look for the node, add a port if allowed
+
+					// If not allowed to add a port to the relevant node, or if no relevant node found:
+					throw new BloxException("Endpoint " + portname + " not found in " + node);
 				}
 			}
 
-			add(ept);
+			add(endpoint);
 			if (type == null) {
-				type = ept.port.type;
+				type = endpoint.port.type;
 			}
 		}
 	}
 
 	/**
 	 * Add an endpoint to this connection
-	 * @param b The endpoint to add to this connection
+	 * @param endpoint The endpoint to add to this connection
 	 * @throws BloxException
 	 */
-	public void add(Bloxendpoint b) throws BloxException {
-		if (b == null) {
+	public void add(Bloxendpoint endpoint) throws BloxException {
+		if (endpoint == null) {
 			throw new BloxException("Not expecting null endpoint at " + this);
 		}
 
-		if (!endpoints.contains(b)) {
-			endpoints.add(b);
+		if (!endpoints.contains(endpoint)) {
+			endpoints.add(endpoint);
 		}
-		if (b.isPort()) {
+		if (endpoint.isPort()) {
 			hasport = true;
 		}
 	}
@@ -151,21 +152,21 @@ public class Bloxconnection {
 	 * Generate a string representation of this connection
 	 */
 	public String toString() {
-		String eps = " ";
+		String endpoints_string = " ";
 		if (endpoints.isEmpty()) {
-			eps = " (no endpoints)";
+			endpoints_string = " (no endpoints)";
 		} else {
-			for (Bloxendpoint ep: endpoints) {
+			for (Bloxendpoint endpoint: endpoints) {
 				//				Bloxport p = ep.port;
 				//				eps += p.parent.name + ":";
 				//				eps += p.name + " ";
-				eps += ep + (ep.isMaster()?"(m)":"(s)") + " ";
+				endpoints_string += endpoint + (endpoint.isMaster()?"(m)":"(s)") + " ";
 			}
 		}
 		if (parameter != null) {
-			eps = " [" + parameter.toString() + "]" + eps;
+			endpoints_string = " [" + parameter.toString() + "]" + endpoints_string;
 		}
-		return "connection " + name + "(" + type.name + ")" + eps;
+		return "connection " + name + "(" + type.name + ")" + endpoints_string;
 	}
 
 	/**
