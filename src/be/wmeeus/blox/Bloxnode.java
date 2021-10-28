@@ -684,6 +684,7 @@ public class Bloxnode extends Bloxelement implements Visitable {
 			}
 
 			if (localconnections != null) for (Bloxconnection connection: localconnections) {
+				System.err.println("*Bloxnode::vhdl* connection " + connection);
 				boolean has_parameter = false;
 				ArrayList<Integer> parameter_domain = null;
 				if (connection.parameter != null) {
@@ -998,6 +999,7 @@ public class Bloxnode extends Bloxelement implements Visitable {
 					+ count_suffix);
 			if (vhdl_port_symbol != null) {
 				for (Bloxendpoint endpoint: connection.endpoints) {
+					System.err.println("*Bloxnode::connectBusPort(1)* endpoint " + endpoint);
 					if (!endpoint.isPort()) {
 						if (endpoint.isMaster() || !bp_fanout_array || !(vhdl_port_symbol.getType() instanceof VHDLarray)) { 
 							vhdlConnectSingleBusport(architecture, instances, connection, has_parameter, bus_port, parseq, seq, 
@@ -1082,6 +1084,7 @@ public class Bloxnode extends Bloxelement implements Visitable {
 		}
 
 		for (Bloxendpoint endpoint: connection.endpoints) {
+			System.err.println("*Bloxnode::connectBusPort(2)* endpoint " + endpoint);
 			// TODO slave of array fanout 
 			// TODO why am I conditionally doing the exact same thing?
 			if (endpoint.isMaster() || !bp_fanout_array || !(bus_signal.getType() instanceof VHDLarray)) { 
@@ -1128,6 +1131,9 @@ public class Bloxnode extends Bloxelement implements Visitable {
 	private VHDLsignal vhdlConnectSingleBusport(VHDLarchitecture architecture, Hashtable<Bloxnode, ArrayList<VHDLinstance>> instances,
 			Bloxconnection connection, boolean has_parameter, Bloxbusport busport, int parseq, int seq, 
 			ArrayList<Integer> ldom, Bloxendpoint endpoint, VHDLnode bs, int fanoutstart, String suffix) throws VHDLexception, BloxException {
+
+		System.err.println("*Bloxnode::vhdlConnectSingleBusPort* endpoint " + endpoint);
+
 		try {
 			Hashtable<Msymbol, Integer> parameter_values = null;
 			if (connection.parameter != null) {
@@ -1171,6 +1177,7 @@ public class Bloxnode extends Bloxelement implements Visitable {
 
 				}
 				ArrayList<VHDLinstance> insts = instances.get(endpoint.getLast());
+				System.err.println("=> instances: " + insts);
 
 				String portprefix = "";
 				// master or slave?
@@ -1180,7 +1187,7 @@ public class Bloxnode extends Bloxelement implements Visitable {
 				String portname = endpoint.port.name;
 				if (portname.endsWith("_clk") && connection.type != Bloxbus.WIRE) {
 					int l = endpoint.port.name.length();
-					portbase = endpoint.port.name.substring(0, l-4);
+					//portbase = endpoint.port.name.substring(0, l-4);
 					Bloxport clport = cnode.getPort(portbase);
 					if (clport != null) {
 						busclock = true;
@@ -1200,7 +1207,7 @@ public class Bloxnode extends Bloxelement implements Visitable {
 						portprefix = cnode.outputprefix + portprefix;
 					}
 				} else {
-					// TODO figure out what to do
+					System.err.println("*Bloxnode::vhdlConnectSingleBusPort* heeeeeeelp!!");
 				}
 
 				String portsuffix = "";
@@ -1222,7 +1229,7 @@ public class Bloxnode extends Bloxelement implements Visitable {
 				} else {
 					fullportname += portsuffix;
 				}
-
+				System.err.println("=> fullportname: " + fullportname);
 				// does iseq refer to the instance or to the port? or both?
 				VHDLnode n = bs;
 				if (!has_parameter && insts.size() > 1) {
@@ -1232,6 +1239,8 @@ public class Bloxnode extends Bloxelement implements Visitable {
 								n = new VHDLsubrange(bs, fanoutstart++);
 							}
 							inst.map(fullportname, n);
+						} else {
+							System.err.println("we're not connecting anything here: \nInstance: " +inst.getName() + "\nEndpoint: " + endpoint.getLastInst().getName());
 						}
 					}
 				} else {
@@ -1377,6 +1386,12 @@ public class Bloxnode extends Bloxelement implements Visitable {
 			} else {
 				System.err.println("Skipping object of class " + connections_object.getClass().getName());
 			}
+		}
+	}
+
+	public void setFullpath(String parent_instance_path) {
+		if (children != null) for (Bloxinstance instance: children) {
+			instance.setFullpath(parent_instance_path);
 		}
 	}
 

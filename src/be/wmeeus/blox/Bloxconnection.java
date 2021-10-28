@@ -106,6 +106,8 @@ public class Bloxconnection {
 					local_port_name = local_port_name.substring(0, open_bracket_position);
 				}
 				port = node.getPort(local_port_name);
+				// TODO check whether the port exists
+				// TODO if the port doesn't exist, either create it or flag an error
 				endpoint = new Bloxendpoint(port);
 				try {
 					endpoint.portindex = Mnode.mknode(port_range);

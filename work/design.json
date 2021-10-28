@@ -45,6 +45,13 @@
 				"connectsTo": [
 					"core_clk"
 				]
+			},
+			{
+				"name": "periphery",
+				"connectsTo": [
+					"core_clk"
+				],
+				"repeat": 4
 			}
 		],
 		"connections": [

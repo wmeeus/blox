@@ -39,6 +39,26 @@ public class Bloxinstance extends Bloxelement {
 //		ports.add(new Bloxport(p.name /* TODO needs to be unique */, p.direction, null, this));
 //	}
 
+	private String fullpath = null;
+
+	public void setFullpath(String parent_instance_path) {
+		if (parent_instance_path == null) {
+			fullpath = "/" + name;
+		} else {
+			fullpath = parent_instance_path + "/" + name;
+		}
+		node.setFullpath(fullpath);
+	}
+
+	public String getFullpath() {
+		return fullpath;
+	}
+
+	public boolean match_fullpath(String regex) {
+		// TODO write method
+		return false;
+	}
+
 	/**
 	 * The parameter (generic) map of this instance
 	 */
@@ -59,7 +79,7 @@ public class Bloxinstance extends Bloxelement {
 	public Bloxinstance(String s, Bloxnode n) throws BloxException {
 		s = s.trim();
 		if ((s==null || s.isEmpty()) && n==null) 
-			throw new BloxException("Null/empty name AND null node, whatare we doing here?");
+			throw new BloxException("Null/empty name AND null node, what are we doing here?");
 		if (s==null || s.isEmpty()) {
 			System.out.println("*Warning* Null or empty name for node " + n.name);
 			s = "inst_" + n.name;
@@ -94,11 +114,6 @@ public class Bloxinstance extends Bloxelement {
 			node.addParent(this);
 			if (o.has("repeat")) {
 				repeat = o.getInt("repeat");
-			}
-			if (o.has("connectsTo")) {
-				JSONArray ca = o.getJSONArray("connectsTo");
-				// store the array for now, we'll need a 2nd pass to build the actual connections
-				uput("connectsTo", ca);
 			}
 		} catch (JSONException ex) {
 			ex.printStackTrace();
@@ -246,6 +261,7 @@ public class Bloxinstance extends Bloxelement {
 						System.exit(1);
 					}
 					String connectionstring = (String) connectionsobject;
+					System.err.println("*Bloxinstance::connectGlobals* instance " + name + " connects to " + connectionstring);
 					String portname = connectionstring;
 					if (connectionstring.contains("<=")) {
 						int index = connectionstring.indexOf("<=");
