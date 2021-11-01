@@ -9,14 +9,12 @@ public class ConnectSignals implements Visitor {
 
 	@Override
 	public void visit(Bloxinstance b) {
-		// TODO Auto-generated method stub
-		
+		// nothing to do here
 	}
 
 	@Override
 	public void visit(Bloxport b) {
-		// TODO Auto-generated method stub
-		
+		// nothing to do here
 	}
 
 }
