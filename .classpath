@@ -9,10 +9,6 @@
 			<attribute name="module" value="true"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry kind="lib" path="/home/wmeeus/project/lib/json-20201115.jar">
-		<attributes>
-			<attribute name="module" value="true"/>
-		</attributes>
-	</classpathentry>
+	<classpathentry kind="lib" path="/home/wmeeus/project/lib/json-20201115.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

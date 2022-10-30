@@ -1121,7 +1121,7 @@ public class Bloxnode extends Bloxelement implements Visitable {
 	 * @param seq
 	 * @param ldom
 	 * @param endpoint
-	 * @param bs
+	 * @param par_vhdl_port_symbol
 	 * @param fanoutstart
 	 * @param suffix
 	 * @return
@@ -1130,7 +1130,7 @@ public class Bloxnode extends Bloxelement implements Visitable {
 	 */
 	private VHDLsignal vhdlConnectSingleBusport(VHDLarchitecture architecture, Hashtable<Bloxnode, ArrayList<VHDLinstance>> instances,
 			Bloxconnection connection, boolean has_parameter, Bloxbusport busport, int parseq, int seq, 
-			ArrayList<Integer> ldom, Bloxendpoint endpoint, VHDLnode bs, int fanoutstart, String suffix) throws VHDLexception, BloxException {
+			ArrayList<Integer> ldom, Bloxendpoint endpoint, VHDLnode par_vhdl_port_symbol, int fanoutstart, String suffix) throws VHDLexception, BloxException {
 
 		System.err.println("*Bloxnode::vhdlConnectSingleBusPort* endpoint " + endpoint);
 
@@ -1153,9 +1153,9 @@ public class Bloxnode extends Bloxelement implements Visitable {
 							vhdl_port_node = new VHDLsubrange(vhdl_port_node, Mvhdl.vhdl(endpoint.portindex, architecture));
 						}
 						if (vhdl_port.isIn()) {
-							architecture.add(new VHDLassign(bs, vhdl_port_node));
+							architecture.add(new VHDLassign(par_vhdl_port_symbol, vhdl_port_node));
 						} else {
-							architecture.add(new VHDLassign(vhdl_port_node, bs));
+							architecture.add(new VHDLassign(vhdl_port_node, par_vhdl_port_symbol));
 						}
 					} else {
 						throw new BloxException("*Bloxnode::vhdlConnectBusPort* not expecting " + vhdl_port_symbol.getClass().getName());
@@ -1231,14 +1231,14 @@ public class Bloxnode extends Bloxelement implements Visitable {
 				}
 				System.err.println("=> fullportname: " + fullportname);
 				// does iseq refer to the instance or to the port? or both?
-				VHDLnode n = bs;
+				VHDLnode node = par_vhdl_port_symbol;
 				if (!has_parameter && insts.size() > 1) {
 					for (VHDLinstance inst: insts) {
 						if (endpoint.getConnectNode() || inst.getName().equals(endpoint.getLastInst().getName())) {
 							if (fanoutstart > -1) {
-								n = new VHDLsubrange(bs, fanoutstart++);
+								node = new VHDLsubrange(par_vhdl_port_symbol, fanoutstart++);
 							}
-							inst.map(fullportname, n);
+							inst.map(fullportname, node);
 						} else {
 							System.err.println("we're not connecting anything here: \nInstance: " +inst.getName() + "\nEndpoint: " + endpoint.getLastInst().getName());
 						}
@@ -1246,9 +1246,9 @@ public class Bloxnode extends Bloxelement implements Visitable {
 				} else {
 					VHDLinstance inst = insts.get(iseq);
 					if (!endpoint.isMaster() && fanoutstart > -1) {
-						n = new VHDLsubrange(bs, fanoutstart);
+						node = new VHDLsubrange(par_vhdl_port_symbol, fanoutstart);
 					}
-					inst.map(fullportname, n);
+					inst.map(fullportname, node);
 				}
 			}
 		} catch(Mexception ex) {

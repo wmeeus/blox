@@ -414,7 +414,7 @@ public class Bloxendpoint {
 	 * @param c true if this endpoint represents all instances of a node, false if only one
 	 *   particular instance is represented
 	 */
-	void setConnectNode(boolean c) { // TODO call this method where appropriate. Currently never called but that's not OK.
+	void setConnectNode(boolean c) {
 		connectnode = c;
 	}
 

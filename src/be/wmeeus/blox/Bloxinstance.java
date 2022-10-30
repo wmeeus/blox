@@ -284,6 +284,8 @@ public class Bloxinstance extends Bloxelement {
 						node.addPort(p);
 					}
 					Bloxendpoint ep = design.findEndBlock(name).setPort(p);
+					// TODO figure out if the next line needs refinement
+					ep.setConnectNode(true);
 					globalconnection.add(ep);
 				}
 			} catch (BloxException ex) {
