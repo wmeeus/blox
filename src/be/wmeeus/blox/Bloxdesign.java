@@ -125,7 +125,9 @@ public class Bloxdesign extends Bloxnode {
 				JSONObject o = new JSONObject(new JSONTokener(new FileInputStream(args[0])));
 				if (o.has("design")) {
 					design = new Bloxdesign(o.getJSONObject("design"));
+					System.out.println("** resolve instances **");
 					design.setFullpath(null);
+					System.out.println("** connecting global signals **");
 					design.connectGlobals();
 					design.accept(new ConnectGlobals());
 					System.out.println("** start connecting signals **");
